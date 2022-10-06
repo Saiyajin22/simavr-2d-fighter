@@ -28,6 +28,8 @@
 #else
 #include <GL/glut.h>
 #endif
+#include <pthread.h>
+#include <stdio.h>
 
 #include "hd44780_cgrom.h"
 
@@ -42,6 +44,26 @@ static unsigned char cgram_pixel_data[HD44780_GL_TEXTURE_SIZE] = {0};  // NOTE: 
 
 static GLuint cgrom_texture;
 static GLuint cgram_texture;
+
+static pthread_mutex_t hd44780_state_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void before_state_lock_cb(void *b)
+{
+	pthread_mutex_lock(&hd44780_state_mutex);
+}
+
+void after_state_lock_cb(void *b)
+{
+	pthread_mutex_unlock(&hd44780_state_mutex);
+}
+
+void hd44780_setup_mutex_for_gl(hd44780_t *b)
+{
+	b->on_state_lock = &before_state_lock_cb;
+	b->on_state_lock_parameter = b;
+	b->on_state_unlock = &after_state_lock_cb;
+	b->on_state_unlock_parameter = b;
+}
 
 void
 hd44780_gl_init()
@@ -155,6 +177,13 @@ hd44780_gl_draw(
 		uint32_t text,
 		uint32_t shadow)
 {
+	if (b->on_state_lock != &before_state_lock_cb ||
+		b->on_state_unlock != &after_state_lock_cb)
+	{
+		printf("Error: the hd44780 instance is not using the mutex of the OpenGL thread!\nCall hd44780_setup_mutex_for_gl() first!\n");
+		exit(EXIT_FAILURE);
+	}
+
 	int rows = b->w;
 	int lines = b->h;
 
@@ -170,11 +199,22 @@ hd44780_gl_draw(
 	        + (lines - 1) + HD44780_GL_BORDER, 0);
 	glEnd();
 
+	// create a local copy (so we can release the mutex as fast as possible)
+	uint8_t vram[192];
+	pthread_mutex_lock(&hd44780_state_mutex);
+	int cgram_dirty = hd44780_get_flag(b, HD44780_FLAG_CRAM_DIRTY);
+	for (uint8_t i = 0; i < 192; i++)
+		vram[i] = b->vram[i];
+	// the values have been seen, they are not dirty anymore
+	hd44780_set_flag(b, HD44780_FLAG_CRAM_DIRTY, 0);
+	hd44780_set_flag(b, HD44780_FLAG_DIRTY, 0);
+	pthread_mutex_unlock(&hd44780_state_mutex);
+
 	// Re-generate texture for cgram
-	if (hd44780_get_flag(b, HD44780_FLAG_CRAM_DIRTY)) {
+	if (cgram_dirty) {
 		for (int c = 0; c < 8; c++) {
 			for (int y = 0; y < HD44780_CHAR_HEIGHT; y++) {
-				uint8_t bits = b->vram[0x80 + c * 8 + y];
+				uint8_t bits = vram[0x80 + c * 8 + y];
 				uint8_t mask = 1 << (HD44780_CHAR_WIDTH - 1);
 				for (int x = 0; x < HD44780_CHAR_WIDTH; x++, mask >>= 1) {
 					int p1 = ((c * HD44780_CHAR_HEIGHT * HD44780_CHAR_WIDTH) + (y * HD44780_CHAR_WIDTH) + x) * HD44780_GL_TEXTURE_BYTES_PER_PIXEL;
@@ -203,20 +243,17 @@ hd44780_gl_draw(
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glDisable(GL_TEXTURE_2D);
-
-		hd44780_set_flag(b, HD44780_FLAG_CRAM_DIRTY, 0);
 	}
 
 	glColor3f(1.0f, 1.0f, 1.0f);
 	const uint8_t offset[] = { 0x00, 0x40, 0x00 + 20, 0x40 + 20 };
-	for (int v = 0 ; v < b->h; v++) {
+	for (int v = 0 ; v < lines; v++) {
 		glPushMatrix();
-		for (int i = 0; i < b->w; i++) {
-			glputchar(b->vram[offset[v] + i], character, text, shadow);
+		for (int i = 0; i < rows; i++) {
+			glputchar(vram[offset[v] + i], character, text, shadow);
 			glTranslatef(HD44780_CHAR_WIDTH + 1, 0, 0);
 		}
 		glPopMatrix();
 		glTranslatef(0, HD44780_CHAR_HEIGHT + 1, 0);
 	}
-	hd44780_set_flag(b, HD44780_FLAG_DIRTY, 0);
 }
