@@ -76,6 +76,7 @@ static struct {
 	{ .key='6', .ui_key_state = { .count = 0, .state = 1 }, .avr_key_state = { .count = 0, .state = 1 }, .name = "B4" },
 	{ .key='2', .ui_key_state = { .count = 0, .state = 1 }, .avr_key_state = { .count = 0, .state = 1 }, .name = "B5" },
 };
+static uint8_t rotation = 0; // Rotation of LCD screen, between 0 and 3
 static hd44780_t hd44780; // simulated LCD controller
 static avr_t * avr = NULL; // simulated AVR MCU
 
@@ -222,6 +223,69 @@ static void setup_board()
 
 /* Setup of UI */
 
+typedef struct {
+	int w;
+	int h;
+} window_size_t;
+
+static window_size_t ui_get_window_size()
+{
+	// NOTE: keep constants in sync with hd44780_glut.c and hd44780_cgrom.h
+	const int border = 3;	  // HD44780_GL_BORDER
+	const int charwidth = 5;  // HD44780_CHAR_WIDTH
+	const int charheight = 8; // HD44780_CHAR_HEIGHT
+
+	const int pixsize = 3;
+	window_size_t result={};
+	result.w = ((2 * border - 1) + hd44780.w * (charwidth + 1)) * pixsize;
+	result.h = ((2 * border - 1) + hd44780.h * (charheight + 1)) * pixsize;
+	return result;
+}
+
+static void ui_set_window_rotation()
+{
+	window_size_t size = ui_get_window_size();
+
+	glMatrixMode(GL_PROJECTION); // Select projection matrix
+	glLoadIdentity();			 // Start with an identity matrix
+	switch (rotation) {
+	case 0:
+		glOrtho(0, size.w, 0, size.h, 0, 10);
+		glScalef(1, -1, 1);
+		glTranslatef(0, -size.h, 0);
+		glutReshapeWindow(size.w, size.h);
+		break;
+	case 1:
+		glOrtho(0, size.h, 0, size.w, 0, 10);
+		glScalef(1, -1, 1);
+		glTranslatef(size.h, -size.w, 0);
+		glRotatef(90, 0, 0, 1);
+		glutReshapeWindow(size.h, size.w);
+		break;
+	case 2:
+		glOrtho(0, size.w, 0, size.h, 0, 10);
+		glScalef(1, -1, 1);
+		glTranslatef(size.w, 0, 0);
+		glRotatef(180, 0, 0, 1);
+		glutReshapeWindow(size.w, size.h);
+		break;
+	default:
+		glOrtho(0, size.h, 0, size.w, 0, 10);
+		glScalef(1, -1, 1);
+		glRotatef(270, 0, 0, 1);
+		glutReshapeWindow(size.h, size.w);
+		break;
+	}
+}
+
+static void rotate_ui(){
+	rotation++;
+	if (rotation >= 4) {
+		rotation = 0;
+	}
+	ui_set_window_rotation();
+}
+
 /**
  * Draw window contents.
  */
@@ -256,9 +320,26 @@ static void ui_key_press_cb(unsigned char key, int x, int y)
 	if (key == 'q') {
 		exit(EXIT_SUCCESS);
 	}
+	if (key == 'r') {
+		rotate_ui();
+		// release buttons
+		for (int i = 0; i < 5; i++) {
+			if (!button[i].ui_key_state.state) {
+				button[i].ui_key_state.count++;
+				button[i].ui_key_state.state = 1;
+			}
+		}
+		// permute corresponding keys
+		char tmp = button[0].key;
+		button[0].key = button[3].key;
+		button[3].key = button[4].key;
+		button[4].key = button[1].key;
+		button[1].key = tmp;
+		return;
+	}
 
 	for (int i = 0; i < 5; i++) {
-		if (key == button[i].key) {
+		if (key == button[i].key && button[i].ui_key_state.state) {
 			button[i].ui_key_state.count++;
 			button[i].ui_key_state.state = 0;
 			break;
@@ -272,7 +353,7 @@ static void ui_key_press_cb(unsigned char key, int x, int y)
 static void ui_key_release_cb(unsigned char key, int x, int y)
 {
 	for (int i = 0; i < 5; i++) {
-		if (key == button[i].key) {
+		if (key == button[i].key && !button[i].ui_key_state.state) {
 			button[i].ui_key_state.count++;
 			button[i].ui_key_state.state = 1;
 			break;
@@ -282,25 +363,13 @@ static void ui_key_release_cb(unsigned char key, int x, int y)
 
 static void setup_ui()
 {
-	// NOTE: keep constants in sync with hd44780_glut.c and hd44780_cgrom.h
-	const int border = 3; // HD44780_GL_BORDER
-	const int charwidth = 5; // HD44780_CHAR_WIDTH
-	const int charheight = 8; // HD44780_CHAR_HEIGHT
-
-	const int pixsize = 3;
-	const int w = ((2 * border - 1) + hd44780.w * (charwidth + 1)) * pixsize;
-	const int h = ((2 * border - 1) + hd44780.h * (charheight + 1)) * pixsize;
+	window_size_t size = ui_get_window_size();
 
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
-	glutInitWindowSize(w, h);
+	glutInitWindowSize(size.w, size.h);
 	glutCreateWindow("Press 'q' to quit");	/* create window */
 
-	// Set up projection matrix
-	glMatrixMode(GL_PROJECTION); // Select projection matrix
-	glLoadIdentity(); // Start with an identity matrix
-	glOrtho(0, w, 0, h, 0, 10);
-	glScalef(1,-1,1);
-	glTranslatef(0, -1 * h, 0);
+	ui_set_window_rotation();
 
 	glutDisplayFunc(ui_display_cb);		/* set window's display callback */
 	glutTimerFunc(1000 / 24, ui_display_timer_cb, 0);
@@ -382,6 +451,7 @@ int main(int argc, char *argv[])
 
 	printf("This is an Olimex AVR-MT128 development board simulation\n"
 		"Press 'q' to exit\n"
+		"Press 'r' to rotate the display\n"
 		"Press '8', '4', '5', '6', or '2' for buttons B1..B5\n");
 
 	run_avr();
