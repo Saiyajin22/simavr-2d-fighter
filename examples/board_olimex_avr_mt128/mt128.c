@@ -70,11 +70,11 @@ static struct {
 	key_state_t avr_key_state; // last UI key state change translated to AVR button press/release
 	const char * name; // symbolic name
 } button[5] = {
-    {.key = 'w', .ui_key_state = {.count = 0, .state = 1}, .avr_key_state = {.count = 0, .state = 1}, .name = "B1"},
-    {.key = 'a', .ui_key_state = {.count = 0, .state = 1}, .avr_key_state = {.count = 0, .state = 1}, .name = "B2"},
-    {.key = ' ', .ui_key_state = {.count = 0, .state = 1}, .avr_key_state = {.count = 0, .state = 1}, .name = "B3"},
-    {.key = 'd', .ui_key_state = {.count = 0, .state = 1}, .avr_key_state = {.count = 0, .state = 1}, .name = "B4"},
-    {.key = 's', .ui_key_state = {.count = 0, .state = 1}, .avr_key_state = {.count = 0, .state = 1}, .name = "B5"},
+	{ .key='d', .ui_key_state = { .count = 0, .state = 1 }, .avr_key_state = { .count = 0, .state = 1 }, .name = "B1" },
+	{ .key='w', .ui_key_state = { .count = 0, .state = 1 }, .avr_key_state = { .count = 0, .state = 1 }, .name = "B2" },
+	{ .key=' ', .ui_key_state = { .count = 0, .state = 1 }, .avr_key_state = { .count = 0, .state = 1 }, .name = "B3" },
+	{ .key='s', .ui_key_state = { .count = 0, .state = 1 }, .avr_key_state = { .count = 0, .state = 1 }, .name = "B4" },
+	{ .key='a', .ui_key_state = { .count = 0, .state = 1 }, .avr_key_state = { .count = 0, .state = 1 }, .name = "B5" },
 };
 static uint8_t rotation = 0; // Rotation of LCD screen, between 0 and 3
 static hd44780_t hd44780; // simulated LCD controller

@@ -249,6 +249,18 @@ void customSleep(unsigned int seconds)
     }
 }
 
+// GAME RELATED FUNCTIONS, VARIABLES, ETC... ---------------------------------
+
+int playerCol = 0;
+int playerRow = DD_RAM_ADDR2;
+const int DISPLAY_POSITIONS[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+
+void initCharacter()
+{
+    lcd_send_command(playerRow + playerCol);
+    lcd_send_data(5);
+}
+
 // THE GAME -----------------------------------------------
 
 int main()
@@ -259,59 +271,36 @@ int main()
     lcd_send_line1("   2D Fighter");
     lcd_send_line2("Press S to start");
 
-    // loop of the program
+    // welcome screen
     while (1)
     {
-        while (button_pressed() != BUTTON_LEFT)
+        while (button_pressed() != BUTTON_DOWN)
         {
             button_unlock();
         }
         clearDisplay();
+        button_unlock();
         break;
     }
 
-    // lcd_send_command(DD_RAM_ADDR);
-    // for (int i = 0; i < 8; i++)
-    // {
-    //     lcd_send_data(i);
-    // }
+    // game loop
+    initCharacter();
+    while(1) {
+        button_unlock();
 
-    for(int i = 0; i < 8; ++i) {
-        customSleep(5);
-        lcd_send_data(i);
+        if (button_pressed() == BUTTON_RIGHT)
+        {
+            lcd_send_command(playerRow + playerCol);
+            lcd_send_data(' ');
+
+            playerCol++;
+            lcd_send_command(playerRow + playerCol);
+            lcd_send_data(5);
+            button_unlock();
+        }
+
+        
     }
-
-    // customSleep(1);
-    // lcd_send_command(DD_RAM_ADDR + 5);
-    // lcd_send_data(7);
-
-    // lcd_send_command(CG_RAM_ADDR);
-    // lcd_send_data(1);
-
-    // lcd_send_command(DD_RAM_ADDR + 3);
-    // lcd_send_text("f");
-
-    // int cnt = 0;
-    // while (1)
-    // {
-    //     int cnt2 = cnt < 40 ? cnt : 79 - cnt;
-
-    //     lcd_send_command(CG_RAM_ADDR + (cnt2 / 5) * 8);
-    //     lcd_send_data(0);
-
-    //     cnt = (cnt + 1) % 80;
-    //     cnt2 = cnt < 40 ? cnt : 79 - cnt;
-
-    //     lcd_send_command(CG_RAM_ADDR + (cnt2 / 5) * 8);
-    //     lcd_send_data(1);
-
-    //     for (volatile int i = 0; i < 20; i++)
-    //     {
-    //         for (volatile int j = 0; j < 32000; j++)
-    //         {
-    //         }
-    //     }
-    // }
 
     return 0;
 }
