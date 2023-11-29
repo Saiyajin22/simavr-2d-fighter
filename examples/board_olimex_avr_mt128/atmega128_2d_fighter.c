@@ -216,7 +216,7 @@ static unsigned char CUSTOM_CHARACTERS[8][8] = {
      0b11111,
      0b00100,
      0b01110,
-     0b01010}, // Player Looking left
+     0b01010}, // 0 - Player Looking left
     {
         0b01110,
         0b01100,
@@ -225,7 +225,7 @@ static unsigned char CUSTOM_CHARACTERS[8][8] = {
         0b11111,
         0b00100,
         0b01110,
-        0b01010}, // Player looking right
+        0b01010}, // 1 - Player looking right
     {
         0b11110,
         0b11110,
@@ -234,7 +234,7 @@ static unsigned char CUSTOM_CHARACTERS[8][8] = {
         0b00010,
         0b00010,
         0b00010,
-        0b00010}, // Player attack left
+        0b00010}, // 2 - Player attack left
     {
         0b01111,
         0b01111,
@@ -243,7 +243,16 @@ static unsigned char CUSTOM_CHARACTERS[8][8] = {
         0b01000,
         0b01000,
         0b01000,
-        0b01000}, // Player attack right
+        0b01000}, // 3 - Player attack right
+    {
+        0b11100,
+        0b11000,
+        0b01011,
+        0b01011,
+        0b01110,
+        0b01010,
+        0b01000,
+        0b10100}, // 4 - Enemy coming from left
 };
 
 static void chars_init()
@@ -281,8 +290,12 @@ void customSleep(unsigned int seconds)
 
 int playerCol = 0;
 int playerRow = DD_RAM_ADDR2;
+int playerRowNum = 1;
 int playerPoints = 0;
-// const int DISPLAY_POSITIONS[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+int DISPLAY_POSITIONS[2][16] = {
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // 0 == nothing, 1 == player, 2 == enemy
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+};
 int PLAYER = 1;
 #define PLAYER_ATTACK_LEFT 2
 #define PLAYER_ATTACK_RIGHT 3
@@ -295,6 +308,12 @@ void initCharacter()
 
 int validatePlayerPosition() {
     if(playerCol >= 0 && playerCol <= 15) return 1;
+    return 0;
+}
+
+
+int isPlayerDead() {
+    if(DISPLAY_POSITIONS[playerRowNum][playerCol] == 2) return 1;
     return 0;
 }
 
@@ -322,6 +341,11 @@ int main()
 
     // game loop
     initCharacter();
+
+    // TODO Dynamic Enemy creation, and placing them on map
+    lcd_send_command(playerRow + playerCol + 4);
+    lcd_send_data(4);
+    DISPLAY_POSITIONS[playerRowNum][playerCol + 4] = 2;
     while (1)
     {
         int button = button_pressed();
@@ -359,6 +383,7 @@ int main()
                 lcd_send_data(' ');
 
                 playerRow = DD_RAM_ADDR;
+                playerRowNum = 0;
                 lcd_send_command(playerRow + playerCol);
                 lcd_send_data(PLAYER);
             }
@@ -371,6 +396,7 @@ int main()
                 lcd_send_data(' ');
 
                 playerRow = DD_RAM_ADDR2;
+                playerRowNum = 1;
                 lcd_send_command(playerRow + playerCol);
                 lcd_send_data(PLAYER);
             }
@@ -395,7 +421,14 @@ int main()
             }
         }
 
-        
+        // game over
+        if(isPlayerDead()) {
+            // TODO GOOD GAME OVER TEXT, etc..
+            clearDisplay();
+            lcd_send_line1("  GAME OVER  ");
+            break;
+        }
+
         // unlock buttons
         button_unlock();
     }
