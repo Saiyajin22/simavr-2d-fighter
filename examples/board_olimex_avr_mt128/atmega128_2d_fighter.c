@@ -254,11 +254,12 @@ void customSleep(unsigned int seconds)
 int playerCol = 0;
 int playerRow = DD_RAM_ADDR2;
 const int DISPLAY_POSITIONS[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+const int CHARACTER = 5;
 
 void initCharacter()
 {
     lcd_send_command(playerRow + playerCol);
-    lcd_send_data(5);
+    lcd_send_data(CHARACTER);
 }
 
 // THE GAME -----------------------------------------------
@@ -286,20 +287,28 @@ int main()
     // game loop
     initCharacter();
     while(1) {
-        button_unlock();
-
-        if (button_pressed() == BUTTON_RIGHT)
+        int button = button_pressed();
+        if (button == BUTTON_RIGHT)
         {
             lcd_send_command(playerRow + playerCol);
             lcd_send_data(' ');
 
             playerCol++;
             lcd_send_command(playerRow + playerCol);
-            lcd_send_data(5);
-            button_unlock();
+            lcd_send_data(CHARACTER);
+        }
+        else if (button == BUTTON_LEFT)
+        {
+            lcd_send_command(playerRow + playerCol);
+            lcd_send_data(' ');
+
+            playerCol--;
+            lcd_send_command(playerRow + playerCol);
+            lcd_send_data(CHARACTER);
         }
 
-        
+        // unlock buttons
+        button_unlock();
     }
 
     return 0;
