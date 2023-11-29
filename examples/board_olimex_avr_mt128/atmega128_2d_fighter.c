@@ -6,6 +6,9 @@ AVR_MCU(F_CPU, "atmega128");
 #define __AVR_ATmega128__1
 #include <avr/io.h>
 #include <util/delay.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 static void port_init()
 {
@@ -291,7 +294,7 @@ void customSleep(unsigned int seconds)
 int playerCol = 0;
 int playerRow = DD_RAM_ADDR2;
 int playerRowNum = 1;
-int playerPoints = 0;
+int playerScore = 0;
 int DISPLAY_POSITIONS[2][16] = {
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // 0 == nothing, 1 == player, 2 == enemy
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
@@ -423,9 +426,12 @@ int main()
 
         // game over
         if(isPlayerDead()) {
-            // TODO GOOD GAME OVER TEXT, etc..
             clearDisplay();
-            lcd_send_line1("  GAME OVER  ");
+            lcd_send_line1("   GAME OVER!");
+            char score[4];
+            snprintf(score, sizeof(score), "%d", playerScore);
+            char* scoreText = strcat(" YOUR SCORE: ", score);
+            lcd_send_line2(scoreText);
             break;
         }
 
