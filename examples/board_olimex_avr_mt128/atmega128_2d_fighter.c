@@ -209,8 +209,23 @@ static void clearDisplay()
 // CUSTOM CHARACTERS ------------------------------
 
 static unsigned char CUSTOM_CHARACTERS[8][8] = {
-    {0b10101, 0b01010, 0b10101, 0b01010, 0, 0, 0, 0},                         // CHAR_EMPTY_PATTERN
-    {0b11111, 0b11111, 0b11111, 0b11111, 0, 0, 0, 0},                         // CHAR_EMPTY_PLAYGROUND
+    {0b01110,
+     0b00110,
+     0b01110,
+     0b00100,
+     0b11111,
+     0b00100,
+     0b01110,
+     0b01010}, // Player Looking left
+    {
+        0b01110,
+        0b01100,
+        0b01110,
+        0b00100,
+        0b11111,
+        0b00100,
+        0b01110,
+        0b01010}, //Player looking right
     {0, 0, 0, 0, 0b10101, 0b01010, 0b10101, 0b01010},                         // CHAR_PATTERN_EMPTY
     {0b10101, 0b01010, 0b10101, 0b01010, 0b10101, 0b01010, 0b10101, 0b01010}, // CHAR_PATTERN_PATTERN
     {0b11111, 0b11111, 0b11111, 0b11111, 0b10101, 0b01010, 0b10101, 0b01010}, // CHAR_PATTERN_PLAYGROUND
@@ -231,7 +246,8 @@ static void chars_init()
 
 // HELPER FUNCTIONS ---------------------------------------
 
-void wait(volatile int num1, volatile int num2) {
+void wait(volatile int num1, volatile int num2)
+{
     for (volatile int i = 0; i < num1; i++)
     {
         for (volatile int j = 0; j < num2; j++)
@@ -254,12 +270,12 @@ void customSleep(unsigned int seconds)
 int playerCol = 0;
 int playerRow = DD_RAM_ADDR2;
 const int DISPLAY_POSITIONS[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-const int CHARACTER = 5;
+int PLAYER = 1;
 
 void initCharacter()
 {
     lcd_send_command(playerRow + playerCol);
-    lcd_send_data(CHARACTER);
+    lcd_send_data(PLAYER);
 }
 
 // THE GAME -----------------------------------------------
@@ -286,7 +302,8 @@ int main()
 
     // game loop
     initCharacter();
-    while(1) {
+    while (1)
+    {
         int button = button_pressed();
         if (button == BUTTON_RIGHT)
         {
@@ -294,8 +311,9 @@ int main()
             lcd_send_data(' ');
 
             playerCol++;
+            PLAYER = 1;
             lcd_send_command(playerRow + playerCol);
-            lcd_send_data(CHARACTER);
+            lcd_send_data(PLAYER);
         }
         else if (button == BUTTON_LEFT)
         {
@@ -303,8 +321,33 @@ int main()
             lcd_send_data(' ');
 
             playerCol--;
+            PLAYER = 0;
             lcd_send_command(playerRow + playerCol);
-            lcd_send_data(CHARACTER);
+            lcd_send_data(PLAYER);
+        }
+        else if (button == BUTTON_UP)
+        {
+            if (playerRow == DD_RAM_ADDR2)
+            {
+                lcd_send_command(playerRow + playerCol);
+                lcd_send_data(' ');
+
+                playerRow = DD_RAM_ADDR;
+                lcd_send_command(playerRow + playerCol);
+                lcd_send_data(PLAYER);
+            }
+        }
+        else if (button == BUTTON_DOWN)
+        {
+            if (playerRow == DD_RAM_ADDR)
+            {
+                lcd_send_command(playerRow + playerCol);
+                lcd_send_data(' ');
+
+                playerRow = DD_RAM_ADDR2;
+                lcd_send_command(playerRow + playerCol);
+                lcd_send_data(PLAYER);
+            }
         }
 
         // unlock buttons
