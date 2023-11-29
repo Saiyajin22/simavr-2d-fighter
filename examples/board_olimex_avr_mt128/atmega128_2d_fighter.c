@@ -225,13 +225,25 @@ static unsigned char CUSTOM_CHARACTERS[8][8] = {
         0b11111,
         0b00100,
         0b01110,
-        0b01010}, //Player looking right
-    {0, 0, 0, 0, 0b10101, 0b01010, 0b10101, 0b01010},                         // CHAR_PATTERN_EMPTY
-    {0b10101, 0b01010, 0b10101, 0b01010, 0b10101, 0b01010, 0b10101, 0b01010}, // CHAR_PATTERN_PATTERN
-    {0b11111, 0b11111, 0b11111, 0b11111, 0b10101, 0b01010, 0b10101, 0b01010}, // CHAR_PATTERN_PLAYGROUND
-    {0, 0, 0, 0, 0b11111, 0b11111, 0b11111, 0b11111},                         // CHAR_PLAYGROUND_EMPTY
-    {0b10101, 0b01010, 0b10101, 0b01010, 0b11111, 0b11111, 0b11111, 0b11111}, // CHAR_PLAYGROUND_PATTERN
-    {0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111}  // CHAR_PLAYGROUND_PLAYGROUND
+        0b01010}, // Player looking right
+    {
+        0b11110,
+        0b11110,
+        0b11010,
+        0b11010,
+        0b00010,
+        0b00010,
+        0b00010,
+        0b00010}, // Player attack left
+    {
+        0b01111,
+        0b01111,
+        0b01011,
+        0b01011,
+        0b01000,
+        0b01000,
+        0b01000,
+        0b01000}, // Player attack right
 };
 
 static void chars_init()
@@ -269,13 +281,21 @@ void customSleep(unsigned int seconds)
 
 int playerCol = 0;
 int playerRow = DD_RAM_ADDR2;
-const int DISPLAY_POSITIONS[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+int playerPoints = 0;
+// const int DISPLAY_POSITIONS[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 int PLAYER = 1;
+#define PLAYER_ATTACK_LEFT 2
+#define PLAYER_ATTACK_RIGHT 3
 
 void initCharacter()
 {
     lcd_send_command(playerRow + playerCol);
     lcd_send_data(PLAYER);
+}
+
+int validatePlayerPosition() {
+    if(playerCol >= 0 && playerCol <= 15) return 1;
+    return 0;
 }
 
 // THE GAME -----------------------------------------------
@@ -307,23 +327,29 @@ int main()
         int button = button_pressed();
         if (button == BUTTON_RIGHT)
         {
-            lcd_send_command(playerRow + playerCol);
-            lcd_send_data(' ');
-
             playerCol++;
-            PLAYER = 1;
-            lcd_send_command(playerRow + playerCol);
-            lcd_send_data(PLAYER);
+            if(validatePlayerPosition()) {
+                lcd_send_command(playerRow + playerCol - 1);
+                lcd_send_data(' ');
+                PLAYER = 1;
+                lcd_send_command(playerRow + playerCol);
+                lcd_send_data(PLAYER);
+            } else {
+                playerCol--;
+            }
         }
         else if (button == BUTTON_LEFT)
         {
-            lcd_send_command(playerRow + playerCol);
-            lcd_send_data(' ');
-
             playerCol--;
-            PLAYER = 0;
-            lcd_send_command(playerRow + playerCol);
-            lcd_send_data(PLAYER);
+            if(validatePlayerPosition()) {
+                lcd_send_command(playerRow + playerCol + 1);
+                lcd_send_data(' ');
+                PLAYER = 0;
+                lcd_send_command(playerRow + playerCol);
+                lcd_send_data(PLAYER);
+            } else {
+                playerCol++;
+            }
         }
         else if (button == BUTTON_UP)
         {
@@ -349,7 +375,27 @@ int main()
                 lcd_send_data(PLAYER);
             }
         }
+        // Attack action
+        else if (button == BUTTON_CENTER)
+        {
+            if(PLAYER == 0) {
+                lcd_send_command(playerRow + playerCol - 1);
+                lcd_send_data(PLAYER_ATTACK_LEFT);
 
+                wait(30, 32000);
+                lcd_send_command(playerRow + playerCol - 1);
+                lcd_send_data(' ');
+            } else if(PLAYER == 1) {
+                lcd_send_command(playerRow + playerCol + 1);
+                lcd_send_data(PLAYER_ATTACK_RIGHT);
+
+                wait(30, 32000);
+                lcd_send_command(playerRow + playerCol + 1);
+                lcd_send_data(' ');
+            }
+        }
+
+        
         // unlock buttons
         button_unlock();
     }
