@@ -381,9 +381,11 @@ int main()
                 if(upOrDown == 0) {
                     lcd_send_command(DD_RAM_ADDR2);
                     lcd_send_data(ENEMY_COMING_LEFT);
+                    DISPLAY_POSITIONS[1][0] = 2;
                 } else {
                     lcd_send_command(DD_RAM_ADDR);
                     lcd_send_data(ENEMY_COMING_LEFT);
+                    DISPLAY_POSITIONS[0][0] = 2;
                 } 
             } 
             // right enemy spawn
@@ -392,11 +394,13 @@ int main()
                 {
                     lcd_send_command(DD_RAM_ADDR2+15);
                     lcd_send_data(ENEMY_COMING_RIGHT);
+                    DISPLAY_POSITIONS[1][15] = 2;
                 }
                 else
                 {
                     lcd_send_command(DD_RAM_ADDR+15);
                     lcd_send_data(ENEMY_COMING_RIGHT);
+                    DISPLAY_POSITIONS[0][15] = 2;
                 }
             }
             spawnEnemy = randomNumber(8);
@@ -465,6 +469,7 @@ int main()
                 {
                     DISPLAY_POSITIONS[playerRowNum][playerCol - 1] = 0;
                     DISPLAY_POSITIONS[playerRowNum][playerCol - 2] = 0;
+                    playerScore++;
                 }
                 wait(30, 32000);
                 lcd_send_command(playerRow + playerCol - 1);
@@ -477,6 +482,7 @@ int main()
                 if (DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == 2 || DISPLAY_POSITIONS[playerRowNum][playerCol + 2] == 2) {
                     DISPLAY_POSITIONS[playerRowNum][playerCol + 1] = 0;
                     DISPLAY_POSITIONS[playerRowNum][playerCol + 2] = 0;
+                    playerScore++;
                 }
                 wait(30, 32000);
                 lcd_send_command(playerRow + playerCol + 1);
@@ -488,6 +494,7 @@ int main()
 
         // game over
         if(isPlayerDead()) {
+            customSleep(1);
             clearDisplay();
             lcd_send_line1("   GAME OVER!");
             char score[4];
