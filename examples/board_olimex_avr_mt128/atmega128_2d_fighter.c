@@ -256,6 +256,15 @@ static unsigned char CUSTOM_CHARACTERS[8][8] = {
         0b01010,
         0b01000,
         0b10100}, // 4 - Enemy coming from left
+    {
+        0b00111,
+        0b00011,
+        0b11010,
+        0b11010,
+        0b01110,
+        0b01010,
+        0b00010,
+        0b00101}, // 5 - Enemy coming from right
 };
 
 static void chars_init()
@@ -289,9 +298,14 @@ void customSleep(unsigned int seconds)
     }
 }
 
+// Generate a random number between 0 and the given range
+int randomNumber(int range) {
+    return rand() % (range+1);
+}
+
 // GAME RELATED FUNCTIONS, VARIABLES, ETC... ---------------------------------
 
-int playerCol = 0;
+int playerCol = 5;
 int playerRow = DD_RAM_ADDR2;
 int playerRowNum = 1;
 int playerScore = 0;
@@ -302,6 +316,8 @@ int DISPLAY_POSITIONS[2][16] = {
 int PLAYER = 1;
 #define PLAYER_ATTACK_LEFT 2
 #define PLAYER_ATTACK_RIGHT 3
+#define ENEMY_COMING_LEFT 4
+#define ENEMY_COMING_RIGHT 5
 
 void initCharacter()
 {
@@ -341,17 +357,52 @@ int main()
         button_unlock();
         break;
     }
-
-    // game loop
     initCharacter();
 
     // TODO Dynamic Enemy creation, and placing them on map
     lcd_send_command(playerRow + playerCol + 4);
     lcd_send_data(4);
     DISPLAY_POSITIONS[playerRowNum][playerCol + 4] = 2;
+
+    // game loop
+    int spawnEnemy = randomNumber(8);
     while (1)
     {
         int button = button_pressed();
+        if(button != BUTTON_NONE) {
+            spawnEnemy--;
+        }
+        // Handle enemies
+        if(spawnEnemy == 0) {
+            int leftOrRight = randomNumber(1);
+            int upOrDown = randomNumber(1);
+            // left enemy spawn
+            if(leftOrRight == 0) {
+                if(upOrDown == 0) {
+                    lcd_send_command(DD_RAM_ADDR2);
+                    lcd_send_data(ENEMY_COMING_LEFT);
+                } else {
+                    lcd_send_command(DD_RAM_ADDR);
+                    lcd_send_data(ENEMY_COMING_LEFT);
+                } 
+            } 
+            // right enemy spawn
+            else {
+                if (upOrDown == 0)
+                {
+                    lcd_send_command(DD_RAM_ADDR2+15);
+                    lcd_send_data(ENEMY_COMING_RIGHT);
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR+15);
+                    lcd_send_data(ENEMY_COMING_RIGHT);
+                }
+            }
+            spawnEnemy = randomNumber(8);
+        }
+
+        // buttons handling
         if (button == BUTTON_RIGHT)
         {
             playerCol++;
@@ -410,16 +461,27 @@ int main()
             if(PLAYER == 0) {
                 lcd_send_command(playerRow + playerCol - 1);
                 lcd_send_data(PLAYER_ATTACK_LEFT);
-
+                if (DISPLAY_POSITIONS[playerRowNum][playerCol - 1] == 2 || DISPLAY_POSITIONS[playerRowNum][playerCol - 2] == 2)
+                {
+                    DISPLAY_POSITIONS[playerRowNum][playerCol - 1] = 0;
+                    DISPLAY_POSITIONS[playerRowNum][playerCol - 2] = 0;
+                }
                 wait(30, 32000);
                 lcd_send_command(playerRow + playerCol - 1);
+                lcd_send_data(' ');
+                lcd_send_command(playerRow + playerCol - 2);
                 lcd_send_data(' ');
             } else if(PLAYER == 1) {
                 lcd_send_command(playerRow + playerCol + 1);
                 lcd_send_data(PLAYER_ATTACK_RIGHT);
-
+                if (DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == 2 || DISPLAY_POSITIONS[playerRowNum][playerCol + 2] == 2) {
+                    DISPLAY_POSITIONS[playerRowNum][playerCol + 1] = 0;
+                    DISPLAY_POSITIONS[playerRowNum][playerCol + 2] = 0;
+                }
                 wait(30, 32000);
                 lcd_send_command(playerRow + playerCol + 1);
+                lcd_send_data(' ');
+                lcd_send_command(playerRow + playerCol + 2);
                 lcd_send_data(' ');
             }
         }
