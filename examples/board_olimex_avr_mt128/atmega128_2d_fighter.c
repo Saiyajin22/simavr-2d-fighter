@@ -764,7 +764,7 @@ int main()
         }
 
         // check boss
-        if (playerScore == 5)
+        if (playerScore == 3)
         {
             break;
         }
@@ -871,8 +871,6 @@ int main()
                 setWinState();
                 break;
             }
-
-            button_unlock();
         }
     }
 
