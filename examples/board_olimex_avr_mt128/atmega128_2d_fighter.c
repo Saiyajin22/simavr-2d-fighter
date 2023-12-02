@@ -299,20 +299,21 @@ void customSleep(unsigned int seconds)
 }
 
 // Generate a random number between 0 and the given range
-int randomNumber(int range) {
-    return rand() % (range+1);
+int randomNumber(int range)
+{
+    return rand() % (range + 1);
 }
 
 // GAME RELATED FUNCTIONS, VARIABLES, ETC... ---------------------------------
 
-int playerCol = 5;
+int playerCol = 7;
 int playerRow = DD_RAM_ADDR2;
 int playerRowNum = 1;
 int playerScore = 0;
+int spawnEnemy = 0;
 int DISPLAY_POSITIONS[2][16] = {
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // 0 == nothing, 1 == player, 2 == enemy
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-};
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // 0 == nothing, 1 == player, 4 == enemy coming left, 5 == enemy coming right
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
 int PLAYER = 1;
 #define PLAYER_ATTACK_LEFT 2
 #define PLAYER_ATTACK_RIGHT 3
@@ -325,15 +326,83 @@ void initCharacter()
     lcd_send_data(PLAYER);
 }
 
-int validatePlayerPosition() {
-    if(playerCol >= 0 && playerCol <= 15) return 1;
+int validatePlayerPosition()
+{
+    if (playerCol >= 0 && playerCol <= 15)
+        return 1;
     return 0;
 }
 
-
-int isPlayerDead() {
-    if(DISPLAY_POSITIONS[playerRowNum][playerCol] == 2) return 1;
+int isPlayerDead()
+{
+    if (DISPLAY_POSITIONS[playerRowNum][playerCol] == ENEMY_COMING_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol] == ENEMY_COMING_RIGHT)
+        return 1;
     return 0;
+}
+
+void enemyMovement()
+{
+    int NEW_DISPLAY_POSITIONS[2][16] = {
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
+    for (int i = 0; i < 2; ++i)
+    {
+        for (int j = 0; j < 16; ++j)
+        {
+            if (DISPLAY_POSITIONS[i][j] == ENEMY_COMING_LEFT)
+            {
+                if (j != 15)
+                {
+                    NEW_DISPLAY_POSITIONS[i][j + 1] = ENEMY_COMING_LEFT;
+                }
+
+                if (i == 1)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + j);
+                    lcd_send_data(' ');
+                    lcd_send_command(DD_RAM_ADDR2 + j + 1);
+                    lcd_send_data(ENEMY_COMING_LEFT);
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + j);
+                    lcd_send_data(' ');
+                    lcd_send_command(DD_RAM_ADDR + j + 1);
+                    lcd_send_data(ENEMY_COMING_LEFT);
+                }
+            }
+            else if (DISPLAY_POSITIONS[i][j] == ENEMY_COMING_RIGHT)
+            {
+                if (j != 0)
+                {
+                    NEW_DISPLAY_POSITIONS[i][j - 1] = ENEMY_COMING_RIGHT;
+                }
+
+                if (i == 1)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + j);
+                    lcd_send_data(' ');
+                    lcd_send_command(DD_RAM_ADDR2 + j - 1);
+                    lcd_send_data(ENEMY_COMING_RIGHT);
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + j);
+                    lcd_send_data(' ');
+                    lcd_send_command(DD_RAM_ADDR + j - 1);
+                    lcd_send_data(ENEMY_COMING_RIGHT);
+                }
+            }
+        }
+    }
+    for (int i = 0; i < 2; ++i)
+    {
+        for (int j = 0; j < 16; ++j)
+        {
+            DISPLAY_POSITIONS[i][j] = NEW_DISPLAY_POSITIONS[i][j];
+        }
+    }
+    wait(12, 32000);
 }
 
 // THE GAME -----------------------------------------------
@@ -360,88 +429,52 @@ int main()
     initCharacter();
 
     // game loop
-    int spawnEnemy = 0;
-    int movementCounter = 0;
     while (1)
     {
-        // TODO ENEMY MOVEMENT
-        // if(movementCounter < 20000) {
-            movementCounter++;
-            int NEW_DISPLAY_POSITIONS[2][16] = {
-                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
-            for (int i = 0; i < 2; ++i)
-            {
-                for (int j = 0; j < 16; ++j)
-                {
-                    if (DISPLAY_POSITIONS[i][j] == 2)
-                    {
-                        if(j != 15) {
-                            NEW_DISPLAY_POSITIONS[i][j + 1] = 2;
-                        }
-
-                        if (i == 1)
-                        {
-                            lcd_send_command(DD_RAM_ADDR2 + j);
-                            lcd_send_data(' ');
-                            lcd_send_command(DD_RAM_ADDR2 + j + 1);
-                            lcd_send_data(ENEMY_COMING_LEFT);
-                        }
-                        else
-                        {
-                            lcd_send_command(DD_RAM_ADDR + j);
-                            lcd_send_data(' ');
-                            lcd_send_command(DD_RAM_ADDR + j + 1);
-                            lcd_send_data(ENEMY_COMING_LEFT);
-                        }
-                    }
-                }
-            }
-            for (int i = 0; i < 2; ++i)
-            {
-                for (int j = 0; j < 16; ++j)
-                {
-                    DISPLAY_POSITIONS[i][j] = NEW_DISPLAY_POSITIONS[i][j];
-                }
-            }
-            wait(10, 32000);
-        // }
-
         int button = button_pressed();
-        if(button != BUTTON_NONE) {
+        enemyMovement();
+
+        if (button != BUTTON_NONE)
+        {
             spawnEnemy--;
         }
         // Handle enemies
-        if(spawnEnemy == 0) {
+        if (spawnEnemy == 0)
+        {
             int leftOrRight = randomNumber(1);
             int upOrDown = randomNumber(1);
             // left enemy spawn
-            if(leftOrRight == 0) {
-                if(upOrDown == 0) {
+            if (leftOrRight == 0)
+            {
+                if (upOrDown == 0)
+                {
                     lcd_send_command(DD_RAM_ADDR2);
                     lcd_send_data(ENEMY_COMING_LEFT);
-                    DISPLAY_POSITIONS[1][0] = 2;
-                } else {
+                    DISPLAY_POSITIONS[1][0] = ENEMY_COMING_LEFT;
+                }
+                else
+                {
                     lcd_send_command(DD_RAM_ADDR);
                     lcd_send_data(ENEMY_COMING_LEFT);
-                    DISPLAY_POSITIONS[0][0] = 2;
-                } 
-            } 
+                    DISPLAY_POSITIONS[0][0] = ENEMY_COMING_LEFT;
+                }
+            }
             // right enemy spawn
-            // else {
-            //     if (upOrDown == 0)
-            //     {
-            //         lcd_send_command(DD_RAM_ADDR2+15);
-            //         lcd_send_data(ENEMY_COMING_RIGHT);
-            //         DISPLAY_POSITIONS[1][15] = 2;
-            //     }
-            //     else
-            //     {
-            //         lcd_send_command(DD_RAM_ADDR+15);
-            //         lcd_send_data(ENEMY_COMING_RIGHT);
-            //         DISPLAY_POSITIONS[0][15] = 2;
-            //     }
-            // }
+            else
+            {
+                if (upOrDown == 0)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + 15);
+                    lcd_send_data(ENEMY_COMING_RIGHT);
+                    DISPLAY_POSITIONS[1][15] = ENEMY_COMING_RIGHT;
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + 15);
+                    lcd_send_data(ENEMY_COMING_RIGHT);
+                    DISPLAY_POSITIONS[0][15] = ENEMY_COMING_RIGHT;
+                }
+            }
             spawnEnemy = randomNumber(8);
         }
 
@@ -449,26 +482,32 @@ int main()
         if (button == BUTTON_RIGHT)
         {
             playerCol++;
-            if(validatePlayerPosition()) {
+            if (validatePlayerPosition())
+            {
                 lcd_send_command(playerRow + playerCol - 1);
                 lcd_send_data(' ');
                 PLAYER = 1;
                 lcd_send_command(playerRow + playerCol);
                 lcd_send_data(PLAYER);
-            } else {
+            }
+            else
+            {
                 playerCol--;
             }
         }
         else if (button == BUTTON_LEFT)
         {
             playerCol--;
-            if(validatePlayerPosition()) {
+            if (validatePlayerPosition())
+            {
                 lcd_send_command(playerRow + playerCol + 1);
                 lcd_send_data(' ');
                 PLAYER = 0;
                 lcd_send_command(playerRow + playerCol);
                 lcd_send_data(PLAYER);
-            } else {
+            }
+            else
+            {
                 playerCol++;
             }
         }
@@ -501,10 +540,11 @@ int main()
         // Attack action
         else if (button == BUTTON_CENTER)
         {
-            if(PLAYER == 0) {
+            if (PLAYER == 0)
+            {
                 lcd_send_command(playerRow + playerCol - 1);
                 lcd_send_data(PLAYER_ATTACK_LEFT);
-                if (DISPLAY_POSITIONS[playerRowNum][playerCol - 1] == 2 || DISPLAY_POSITIONS[playerRowNum][playerCol - 2] == 2)
+                if (DISPLAY_POSITIONS[playerRowNum][playerCol - 1] == ENEMY_COMING_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 2] == ENEMY_COMING_LEFT)
                 {
                     DISPLAY_POSITIONS[playerRowNum][playerCol - 1] = 0;
                     DISPLAY_POSITIONS[playerRowNum][playerCol - 2] = 0;
@@ -515,10 +555,13 @@ int main()
                 lcd_send_data(' ');
                 lcd_send_command(playerRow + playerCol - 2);
                 lcd_send_data(' ');
-            } else if(PLAYER == 1) {
+            }
+            else if (PLAYER == 1)
+            {
                 lcd_send_command(playerRow + playerCol + 1);
                 lcd_send_data(PLAYER_ATTACK_RIGHT);
-                if (DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == 2 || DISPLAY_POSITIONS[playerRowNum][playerCol + 2] == 2) {
+                if (DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == ENEMY_COMING_RIGHT || DISPLAY_POSITIONS[playerRowNum][playerCol + 2] == ENEMY_COMING_RIGHT)
+                {
                     DISPLAY_POSITIONS[playerRowNum][playerCol + 1] = 0;
                     DISPLAY_POSITIONS[playerRowNum][playerCol + 2] = 0;
                     playerScore++;
@@ -532,13 +575,14 @@ int main()
         }
 
         // game over
-        if(isPlayerDead()) {
+        if (isPlayerDead())
+        {
             customSleep(1);
             clearDisplay();
             lcd_send_line1("   GAME OVER!");
             char score[4];
             snprintf(score, sizeof(score), "%d", playerScore);
-            char* scoreText = strcat(" YOUR SCORE: ", score);
+            char *scoreText = strcat(" YOUR SCORE: ", score);
             lcd_send_line2(scoreText);
             break;
         }
