@@ -574,10 +574,11 @@ int main()
             {
                 lcd_send_command(playerRow + playerCol - 1);
                 lcd_send_data(PLAYER_ATTACK_LEFT);
-                if (DISPLAY_POSITIONS[playerRowNum][playerCol - 1] == ENEMY_COMING_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 2] == ENEMY_COMING_LEFT)
+                if (DISPLAY_POSITIONS[playerRowNum][playerCol - 1] == ENEMY_COMING_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 2] == ENEMY_COMING_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 3] == ENEMY_COMING_LEFT)
                 {
                     DISPLAY_POSITIONS[playerRowNum][playerCol - 1] = 0;
                     DISPLAY_POSITIONS[playerRowNum][playerCol - 2] = 0;
+                    DISPLAY_POSITIONS[playerRowNum][playerCol - 3] = 0;
                     playerScore++;
                 }
                 wait(10, 32000);
@@ -585,21 +586,26 @@ int main()
                 lcd_send_data(' ');
                 lcd_send_command(playerRow + playerCol - 2);
                 lcd_send_data(' ');
+                lcd_send_command(playerRow + playerCol - 3);
+                lcd_send_data(' ');
             }
             else if (PLAYER == 1)
             {
                 lcd_send_command(playerRow + playerCol + 1);
                 lcd_send_data(PLAYER_ATTACK_RIGHT);
-                if (DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == ENEMY_COMING_RIGHT || DISPLAY_POSITIONS[playerRowNum][playerCol + 2] == ENEMY_COMING_RIGHT)
+                if (DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == ENEMY_COMING_RIGHT || DISPLAY_POSITIONS[playerRowNum][playerCol + 2] == ENEMY_COMING_RIGHT || DISPLAY_POSITIONS[playerRowNum][playerCol + 3] == ENEMY_COMING_RIGHT)
                 {
                     DISPLAY_POSITIONS[playerRowNum][playerCol + 1] = 0;
                     DISPLAY_POSITIONS[playerRowNum][playerCol + 2] = 0;
+                    DISPLAY_POSITIONS[playerRowNum][playerCol + 3] = 0;
                     playerScore++;
                 }
                 wait(10, 32000);
                 lcd_send_command(playerRow + playerCol + 1);
                 lcd_send_data(' ');
                 lcd_send_command(playerRow + playerCol + 2);
+                lcd_send_data(' ');
+                lcd_send_command(playerRow + playerCol + 3);
                 lcd_send_data(' ');
             }
         }
