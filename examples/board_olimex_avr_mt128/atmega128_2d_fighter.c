@@ -378,7 +378,7 @@ int isPlayerDead()
     return 0;
 }
 
-// TODO REFINE MOVEMENT, MAKE IT MORE RANDOM
+// TODO REFINE MOVEMENT, MAKE IT MORE RANDOM AND SMOOTH
 void enemyMovement()
 {
     int NEW_DISPLAY_POSITIONS[2][16] = {
@@ -650,7 +650,9 @@ int main()
         }
     }
 
-    if(!gameOver) {
+    if (!gameOver)
+    {
+        
         // init boss custom chars
         CUSTOM_CHARACTERS[4][0] = 0b00100;
         CUSTOM_CHARACTERS[4][1] = 0b00100;
@@ -689,21 +691,23 @@ int main()
         CUSTOM_CHARACTERS[7][7] = 0b11111; // lower boss part
 
         chars_init();
+        // render boss
+        lcd_send_command(DD_RAM_ADDR + bossSwordCol);
+        lcd_send_data(UPPER_SWORD_PART);
+        lcd_send_command(DD_RAM_ADDR2 + bossSwordCol);
+        lcd_send_data(LOWER_SWORD_PART);
+        lcd_send_command(DD_RAM_ADDR + bossBodyCol);
+        lcd_send_data(BOSS_UPPER_PART);
+        lcd_send_command(DD_RAM_ADDR2 + bossBodyCol);
+        lcd_send_data(BOSS_LOWER_PART);
+
         // boss fight
         while (1)
         {
             int button = button_pressed();
             handleButtons(button);
 
-            // render boss
-            lcd_send_command(DD_RAM_ADDR + bossSwordCol);
-            lcd_send_data(UPPER_SWORD_PART);
-            lcd_send_command(DD_RAM_ADDR2 + bossSwordCol);
-            lcd_send_data(LOWER_SWORD_PART);
-            lcd_send_command(DD_RAM_ADDR + bossBodyCol);
-            lcd_send_data(BOSS_UPPER_PART);
-            lcd_send_command(DD_RAM_ADDR2 + bossBodyCol);
-            lcd_send_data(BOSS_LOWER_PART);
+            button_unlock();
         }
     }
 
