@@ -764,7 +764,7 @@ int main()
         }
 
         // check boss
-        if (playerScore == 3)
+        if (playerScore == 2)
         {
             break;
         }
