@@ -333,7 +333,7 @@ int bossSwordCol = 14;
 int bossBodyCol = 15;
 int gameOver = 0;
 int DISPLAY_POSITIONS[2][16] = {
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // 0 == nothing, 1 == player, 4 == enemy coming left, 5 == enemy coming right
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // 0 == nothing, 1 == player, 4 == enemy coming left, 5 == enemy coming right, 2 == BOSS body part, 3 == BOSS shot
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
 int PLAYER = 1;
 #define PLAYER_ATTACK_LEFT 2
@@ -346,6 +346,8 @@ int PLAYER = 1;
 #define LOWER_SWORD_PART 5
 #define BOSS_UPPER_PART 6
 #define BOSS_LOWER_PART 7
+#define BOSS_BODY_PART 2
+#define BOSS_SHOT 3
 
 void initCharacter()
 {
@@ -374,8 +376,27 @@ int isPlayerDead()
         lcd_send_data(ENEMY_ATTACK_RIGHT);
         return 1;
     }
+    else if (DISPLAY_POSITIONS[playerRowNum][playerCol] == BOSS_BODY_PART || DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == BOSS_BODY_PART)
+    {
+        return 1;
+    }
+    else if (DISPLAY_POSITIONS[playerRowNum][playerCol] == BOSS_SHOT)
+    {
+        return 1;
+    }
 
     return 0;
+}
+
+void resetDisplayPositions()
+{
+    for (int i = 0; i < 2; ++i)
+    {
+        for (int j = 0; j < 16; ++j)
+        {
+            DISPLAY_POSITIONS[i][j] = 0;
+        }
+    }
 }
 
 // TODO REFINE MOVEMENT, MAKE IT MORE RANDOM AND SMOOTH
@@ -431,6 +452,53 @@ void enemyMovement()
                     lcd_send_command(DD_RAM_ADDR + j - 1);
                     lcd_send_data(ENEMY_COMING_RIGHT);
                 }
+            }
+        }
+    }
+    for (int i = 0; i < 2; ++i)
+    {
+        for (int j = 0; j < 16; ++j)
+        {
+            DISPLAY_POSITIONS[i][j] = NEW_DISPLAY_POSITIONS[i][j];
+        }
+    }
+    wait(12, 32000);
+}
+
+void bossShotMovement()
+{
+    int NEW_DISPLAY_POSITIONS[2][16] = {
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
+    for (int i = 0; i < 2; ++i)
+    {
+        for (int j = 0; j < 16; ++j)
+        {
+            if (DISPLAY_POSITIONS[i][j] == BOSS_SHOT)
+            {
+                if (j != 0)
+                {
+                    NEW_DISPLAY_POSITIONS[i][j - 1] = BOSS_SHOT;
+                }
+
+                if (i == 1)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + j);
+                    lcd_send_data(' ');
+                    lcd_send_command(DD_RAM_ADDR2 + j - 1);
+                    lcd_send_data('*');
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + j);
+                    lcd_send_data(' ');
+                    lcd_send_command(DD_RAM_ADDR + j - 1);
+                    lcd_send_data('*');
+                }
+            }
+            else if (DISPLAY_POSITIONS[i][j] == BOSS_BODY_PART)
+            {
+                NEW_DISPLAY_POSITIONS[i][j] = BOSS_BODY_PART;
             }
         }
     }
@@ -537,6 +605,20 @@ void handleButtons(int button)
                 DISPLAY_POSITIONS[playerRowNum][playerCol + 3] = 0;
                 playerScore++;
             }
+            else if (DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == BOSS_BODY_PART || DISPLAY_POSITIONS[playerRowNum][playerCol + 2] == BOSS_BODY_PART || DISPLAY_POSITIONS[playerRowNum][playerCol + 3] == BOSS_BODY_PART)
+            {
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 1] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 2] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 3] = 0;
+                playerScore += 50;
+            }
+            else if (DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == BOSS_SHOT || DISPLAY_POSITIONS[playerRowNum][playerCol + 2] == BOSS_SHOT || DISPLAY_POSITIONS[playerRowNum][playerCol + 3] == BOSS_SHOT)
+            {
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 1] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 2] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 3] = 0;
+                playerScore += 5;
+            }
             wait(10, 32000);
             lcd_send_command(playerRow + playerCol + 1);
             lcd_send_data(' ');
@@ -546,6 +628,52 @@ void handleButtons(int button)
             lcd_send_data(' ');
         }
     }
+}
+
+// sets the game over state
+void setGameOverState()
+{
+    gameOver = 1;
+    customSleep(1);
+    clearDisplay();
+    lcd_send_line1("   GAME OVER!");
+    char score[4];
+    snprintf(score, sizeof(score), "%d", playerScore);
+    char *scoreText = strcat(" YOUR SCORE: ", score);
+    lcd_send_line2(scoreText);
+}
+
+int checkWin()
+{
+    int counter = 0;
+    for (int i = 0; i < 2; ++i)
+    {
+        for (int j = 0; j < 16; j++)
+        {
+            if (DISPLAY_POSITIONS[i][j] == BOSS_BODY_PART)
+            {
+                counter++;
+            }
+        }
+    }
+
+    if (counter > 0)
+    {
+        return 0;
+    }
+
+    return 1;
+}
+
+void setWinState()
+{
+    customSleep(1);
+    clearDisplay();
+    lcd_send_line1("   YOU WON!");
+    char score[4];
+    snprintf(score, sizeof(score), "%d", playerScore);
+    char *scoreText = strcat(" YOUR SCORE: ", score);
+    lcd_send_line2(scoreText);
 }
 
 // THE GAME -----------------------------------------------
@@ -629,14 +757,7 @@ int main()
         // game over
         if (isPlayerDead())
         {
-            gameOver = 1;
-            customSleep(1);
-            clearDisplay();
-            lcd_send_line1("   GAME OVER!");
-            char score[4];
-            snprintf(score, sizeof(score), "%d", playerScore);
-            char *scoreText = strcat(" YOUR SCORE: ", score);
-            lcd_send_line2(scoreText);
+            setGameOverState();
             break;
         }
 
@@ -652,7 +773,7 @@ int main()
 
     if (!gameOver)
     {
-        
+
         // init boss custom chars
         CUSTOM_CHARACTERS[4][0] = 0b00100;
         CUSTOM_CHARACTERS[4][1] = 0b00100;
@@ -691,6 +812,8 @@ int main()
         CUSTOM_CHARACTERS[7][7] = 0b11111; // lower boss part
 
         chars_init();
+        resetDisplayPositions();
+
         // render boss
         lcd_send_command(DD_RAM_ADDR + bossSwordCol);
         lcd_send_data(UPPER_SWORD_PART);
@@ -700,12 +823,55 @@ int main()
         lcd_send_data(BOSS_UPPER_PART);
         lcd_send_command(DD_RAM_ADDR2 + bossBodyCol);
         lcd_send_data(BOSS_LOWER_PART);
+        DISPLAY_POSITIONS[0][bossSwordCol] = 2;
+        DISPLAY_POSITIONS[1][bossSwordCol] = 2;
+        DISPLAY_POSITIONS[0][bossBodyCol] = 2;
+        DISPLAY_POSITIONS[1][bossBodyCol] = 2;
 
+        int shoot = 1;
         // boss fight
         while (1)
         {
             int button = button_pressed();
             handleButtons(button);
+
+            if (button != BUTTON_NONE)
+            {
+                shoot--;
+            }
+            // Handle enemies
+            if (shoot == 0)
+            {
+                int upOrDown = randomNumber(1);
+                if (upOrDown == 0)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + 13);
+                    lcd_send_data('*');
+                    DISPLAY_POSITIONS[1][13] = BOSS_SHOT;
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + 13);
+                    lcd_send_data('*');
+                    DISPLAY_POSITIONS[0][13] = BOSS_SHOT;
+                }
+                shoot = randomNumber(5);
+            }
+
+            bossShotMovement();
+
+            // game over
+            if (isPlayerDead())
+            {
+                setGameOverState();
+                break;
+            }
+
+            if (checkWin())
+            {
+                setWinState();
+                break;
+            }
 
             button_unlock();
         }
