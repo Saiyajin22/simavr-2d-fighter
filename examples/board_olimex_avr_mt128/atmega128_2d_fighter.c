@@ -628,6 +628,8 @@ void handleButtons(int button)
             lcd_send_data(' ');
         }
     }
+    // unlock buttons
+    button_unlock();
 }
 
 // sets the game over state
@@ -761,11 +763,8 @@ int main()
             break;
         }
 
-        // unlock buttons
-        button_unlock();
-
         // check boss
-        if (playerScore == 2)
+        if (playerScore == 5)
         {
             break;
         }
