@@ -265,6 +265,24 @@ static unsigned char CUSTOM_CHARACTERS[8][8] = {
         0b01010,
         0b00010,
         0b00101}, // 5 - Enemy coming from right
+    {
+        0b00000,
+        0b00000,
+        0b11111,
+        0b00011,
+        0b00011,
+        0b00000,
+        0b00000,
+        0b00000}, // 6 - Enemy attack from left
+    {
+        0b00000,
+        0b00000,
+        0b11111,
+        0b11000,
+        0b11000,
+        0b00000,
+        0b00000,
+        0b00000}, // 7 - Enemy attack from right
 };
 
 static void chars_init()
@@ -319,6 +337,8 @@ int PLAYER = 1;
 #define PLAYER_ATTACK_RIGHT 3
 #define ENEMY_COMING_LEFT 4
 #define ENEMY_COMING_RIGHT 5
+#define ENEMY_ATTACK_LEFT 6
+#define ENEMY_ATTACK_RIGHT 7
 
 void initCharacter()
 {
@@ -335,11 +355,22 @@ int validatePlayerPosition()
 
 int isPlayerDead()
 {
-    if (DISPLAY_POSITIONS[playerRowNum][playerCol] == ENEMY_COMING_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol] == ENEMY_COMING_RIGHT)
+    if (DISPLAY_POSITIONS[playerRowNum][playerCol-1] == ENEMY_COMING_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol+1] == ENEMY_COMING_RIGHT) {
+        if (DISPLAY_POSITIONS[playerRowNum][playerCol-1] == ENEMY_COMING_LEFT) {
+            lcd_send_command(playerRow + playerCol);
+            lcd_send_data(ENEMY_ATTACK_LEFT);
+        } else {
+            lcd_send_command(playerRow + playerCol);
+            lcd_send_data(ENEMY_ATTACK_RIGHT);
+        }
+            
         return 1;
+    }
+        
     return 0;
 }
 
+// TODO REFINE MOVEMENT, MAKE IT MORE RANDOM
 void enemyMovement()
 {
     int NEW_DISPLAY_POSITIONS[2][16] = {
