@@ -432,7 +432,6 @@ int main()
     while (1)
     {
         int button = button_pressed();
-        enemyMovement();
 
         if (button != BUTTON_NONE)
         {
@@ -550,7 +549,7 @@ int main()
                     DISPLAY_POSITIONS[playerRowNum][playerCol - 2] = 0;
                     playerScore++;
                 }
-                wait(30, 32000);
+                wait(10, 32000);
                 lcd_send_command(playerRow + playerCol - 1);
                 lcd_send_data(' ');
                 lcd_send_command(playerRow + playerCol - 2);
@@ -566,13 +565,16 @@ int main()
                     DISPLAY_POSITIONS[playerRowNum][playerCol + 2] = 0;
                     playerScore++;
                 }
-                wait(30, 32000);
+                wait(10, 32000);
                 lcd_send_command(playerRow + playerCol + 1);
                 lcd_send_data(' ');
                 lcd_send_command(playerRow + playerCol + 2);
                 lcd_send_data(' ');
             }
         }
+
+        // move enemies
+        enemyMovement();
 
         // game over
         if (isPlayerDead())
