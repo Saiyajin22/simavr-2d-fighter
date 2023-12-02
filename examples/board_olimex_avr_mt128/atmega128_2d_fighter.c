@@ -462,7 +462,7 @@ void enemyMovement()
             DISPLAY_POSITIONS[i][j] = NEW_DISPLAY_POSITIONS[i][j];
         }
     }
-    wait(12, 32000);
+    wait(13, 32000);
 }
 
 void bossShotMovement()
@@ -509,7 +509,7 @@ void bossShotMovement()
             DISPLAY_POSITIONS[i][j] = NEW_DISPLAY_POSITIONS[i][j];
         }
     }
-    wait(12, 32000);
+    wait(13, 32000);
 }
 
 void handleButtons(int button)
