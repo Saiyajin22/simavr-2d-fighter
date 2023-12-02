@@ -355,19 +355,19 @@ int validatePlayerPosition()
 
 int isPlayerDead()
 {
-    if (DISPLAY_POSITIONS[playerRowNum][playerCol-1] == ENEMY_COMING_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol+1] == ENEMY_COMING_RIGHT) {
-        if (DISPLAY_POSITIONS[playerRowNum][playerCol-1] == ENEMY_COMING_LEFT) {
-            lcd_send_command(playerRow + playerCol);
-            lcd_send_data(ENEMY_ATTACK_LEFT);
-        } else {
-            lcd_send_command(playerRow + playerCol);
-            lcd_send_data(ENEMY_ATTACK_RIGHT);
-        }
-            
+    if (DISPLAY_POSITIONS[playerRowNum][playerCol] == ENEMY_COMING_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 1] == ENEMY_COMING_LEFT)
+    {
+        lcd_send_command(playerRow + playerCol);
+        lcd_send_data(ENEMY_ATTACK_LEFT);
         return 1;
     }
-        
-    return 0;
+    else if (DISPLAY_POSITIONS[playerRowNum][playerCol] == ENEMY_COMING_RIGHT || DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == ENEMY_COMING_RIGHT) {
+        lcd_send_command(playerRow + playerCol);
+        lcd_send_data(ENEMY_ATTACK_RIGHT);
+        return 1;
+    }
+
+        return 0;
 }
 
 // TODO REFINE MOVEMENT, MAKE IT MORE RANDOM
