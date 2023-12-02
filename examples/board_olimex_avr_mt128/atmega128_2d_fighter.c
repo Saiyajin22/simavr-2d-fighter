@@ -359,15 +359,54 @@ int main()
     }
     initCharacter();
 
-    // TODO Dynamic Enemy creation, and placing them on map
-    lcd_send_command(playerRow + playerCol + 4);
-    lcd_send_data(4);
-    DISPLAY_POSITIONS[playerRowNum][playerCol + 4] = 2;
-
     // game loop
-    int spawnEnemy = randomNumber(8);
+    int spawnEnemy = 0;
+    int movementCounter = 0;
     while (1)
     {
+        // TODO ENEMY MOVEMENT
+        // if(movementCounter < 20000) {
+            movementCounter++;
+            int NEW_DISPLAY_POSITIONS[2][16] = {
+                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
+            for (int i = 0; i < 2; ++i)
+            {
+                for (int j = 0; j < 16; ++j)
+                {
+                    if (DISPLAY_POSITIONS[i][j] == 2)
+                    {
+                        if(j != 15) {
+                            NEW_DISPLAY_POSITIONS[i][j + 1] = 2;
+                        }
+
+                        if (i == 1)
+                        {
+                            lcd_send_command(DD_RAM_ADDR2 + j);
+                            lcd_send_data(' ');
+                            lcd_send_command(DD_RAM_ADDR2 + j + 1);
+                            lcd_send_data(ENEMY_COMING_LEFT);
+                        }
+                        else
+                        {
+                            lcd_send_command(DD_RAM_ADDR + j);
+                            lcd_send_data(' ');
+                            lcd_send_command(DD_RAM_ADDR + j + 1);
+                            lcd_send_data(ENEMY_COMING_LEFT);
+                        }
+                    }
+                }
+            }
+            for (int i = 0; i < 2; ++i)
+            {
+                for (int j = 0; j < 16; ++j)
+                {
+                    DISPLAY_POSITIONS[i][j] = NEW_DISPLAY_POSITIONS[i][j];
+                }
+            }
+            wait(10, 32000);
+        // }
+
         int button = button_pressed();
         if(button != BUTTON_NONE) {
             spawnEnemy--;
@@ -389,20 +428,20 @@ int main()
                 } 
             } 
             // right enemy spawn
-            else {
-                if (upOrDown == 0)
-                {
-                    lcd_send_command(DD_RAM_ADDR2+15);
-                    lcd_send_data(ENEMY_COMING_RIGHT);
-                    DISPLAY_POSITIONS[1][15] = 2;
-                }
-                else
-                {
-                    lcd_send_command(DD_RAM_ADDR+15);
-                    lcd_send_data(ENEMY_COMING_RIGHT);
-                    DISPLAY_POSITIONS[0][15] = 2;
-                }
-            }
+            // else {
+            //     if (upOrDown == 0)
+            //     {
+            //         lcd_send_command(DD_RAM_ADDR2+15);
+            //         lcd_send_data(ENEMY_COMING_RIGHT);
+            //         DISPLAY_POSITIONS[1][15] = 2;
+            //     }
+            //     else
+            //     {
+            //         lcd_send_command(DD_RAM_ADDR+15);
+            //         lcd_send_data(ENEMY_COMING_RIGHT);
+            //         DISPLAY_POSITIONS[0][15] = 2;
+            //     }
+            // }
             spawnEnemy = randomNumber(8);
         }
 
