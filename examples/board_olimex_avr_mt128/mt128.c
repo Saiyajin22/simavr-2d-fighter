@@ -388,6 +388,7 @@ static void setup_ui()
 	glEnable(GL_BLEND);
 
 	hd44780_gl_init();
+	hd44780_setup_mutex_for_gl(&hd44780);
 }
 
 
@@ -407,10 +408,10 @@ static void * run_avr_thread(void * ignore)
 				button[i].avr_key_state = button[i].ui_key_state;
 				if (button[i].avr_key_state.state == 0) {
 					button_press(&button[i].button, 0);
-					printf("Button %s pressed\n", button[i].name);
+					// printf("Button %s pressed\n", button[i].name);
 				} else {
 					button_release(&button[i].button);
-					printf("Button %s released\n", button[i].name);
+					// printf("Button %s released\n", button[i].name);
 				}
 			}
 		}
