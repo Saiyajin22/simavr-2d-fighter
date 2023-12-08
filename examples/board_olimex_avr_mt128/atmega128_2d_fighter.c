@@ -332,6 +332,8 @@ int spawnEnemy = 0;
 int bossSwordCol = 14;
 int bossBodyCol = 15;
 int gameOver = 0;
+int enemyMovementCounter = 100000;
+int bossShotMovementCounter = 100000;
 int DISPLAY_POSITIONS[2][16] = {
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // 0 == nothing, 1 == player, 4 == enemy coming left, 5 == enemy coming right, 2 == BOSS body part, 3 == BOSS shot
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
@@ -462,7 +464,7 @@ void enemyMovement()
             DISPLAY_POSITIONS[i][j] = NEW_DISPLAY_POSITIONS[i][j];
         }
     }
-    wait(13, 32000);
+    // wait(13, 32000);
 }
 
 void bossShotMovement()
@@ -509,7 +511,7 @@ void bossShotMovement()
             DISPLAY_POSITIONS[i][j] = NEW_DISPLAY_POSITIONS[i][j];
         }
     }
-    wait(13, 32000);
+    // wait(13, 32000);
 }
 
 void handleButtons(int button)
@@ -754,7 +756,12 @@ int main()
         handleButtons(button);
 
         // move enemies
-        enemyMovement();
+        enemyMovementCounter--;
+        if(enemyMovementCounter == 0) {
+            enemyMovement();
+            enemyMovementCounter = 100000;
+        }
+        
 
         // game over
         if (isPlayerDead())
@@ -857,7 +864,12 @@ int main()
                 shoot = randomNumber(5);
             }
 
-            bossShotMovement();
+            bossShotMovementCounter--;
+            if (bossShotMovementCounter == 0) {
+                bossShotMovement();
+                bossShotMovementCounter = 100000;
+            }
+                
 
             // game over
             if (isPlayerDead())
