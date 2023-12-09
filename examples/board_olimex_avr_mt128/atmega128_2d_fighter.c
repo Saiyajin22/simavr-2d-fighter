@@ -391,13 +391,15 @@ int gameOver = 0;
 int enemyMovementCounter = 100000;
 int bossShotMovementCounter = 100000;
 int DISPLAY_POSITIONS[2][16] = {
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // 0 == nothing, 1 == player, 4 == enemy coming left, 5 == enemy coming right, 2 == BOSS body part, 3 == BOSS shot
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // 0 == nothing, 1 == player, 4 == enemy coming left, 5 == enemy coming right, 2 == BOSS body part, 3 == BOSS shot, 6 == enemy archer left, 7 == enemy archer right
     {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0}};
 int PLAYER = 1;
 #define PLAYER_ATTACK_LEFT 2    // sword - custom
 #define PLAYER_ATTACK_RIGHT 210 // sword - built in
 #define ENEMY_COMING_LEFT 4
 #define ENEMY_COMING_RIGHT 5
+#define ENEMY_ARCHER_LEFT 6
+#define ENEMY_ARCHER_RIGHT 7
 #define ENEMY_ATTACK_LEFT 210
 #define ENEMY_ATTACK_RIGHT 2
 #define UPPER_SWORD_PART 4
@@ -475,16 +477,24 @@ void enemyMovement()
             {
                 NEW_DISPLAY_POSITIONS[i][j] = PLAYER_BODY;
             }
+            else if (DISPLAY_POSITIONS[i][j] == ENEMY_ARCHER_LEFT)
+            {
+                NEW_DISPLAY_POSITIONS[i][j] = ENEMY_ARCHER_LEFT;
+            }
+            else if (DISPLAY_POSITIONS[i][j] == ENEMY_ARCHER_RIGHT)
+            {
+                NEW_DISPLAY_POSITIONS[i][j] = ENEMY_ARCHER_RIGHT;
+            }
             else if (DISPLAY_POSITIONS[i][j] == ENEMY_COMING_LEFT)
             {
                 if (j != 15)
                 {
-                    if (playerRowNum == 0 && i != 0)
+                    if (playerRowNum == 0 && i != 0 && j > 0)
                     {
                         NEW_DISPLAY_POSITIONS[i - 1][j] = ENEMY_COMING_LEFT;
                         NEW_DISPLAY_POSITIONS[i][j] = 0;
                     }
-                    else if (playerRowNum == 1 && i != 1)
+                    else if (playerRowNum == 1 && i != 1 && j > 0)
                     {
                         NEW_DISPLAY_POSITIONS[i + 1][j] = ENEMY_COMING_LEFT;
                         NEW_DISPLAY_POSITIONS[i][j] = 0;
@@ -500,12 +510,12 @@ void enemyMovement()
             {
                 if (j != 0)
                 {
-                    if (playerRowNum == 0 && i != 0)
+                    if (playerRowNum == 0 && i != 0 && j < 15)
                     {
                         NEW_DISPLAY_POSITIONS[i - 1][j] = ENEMY_COMING_RIGHT;
                         NEW_DISPLAY_POSITIONS[i][j] = 0;
                     }
-                    else if (playerRowNum == 1 && i != 1)
+                    else if (playerRowNum == 1 && i != 1 && j < 15)
                     {
                         NEW_DISPLAY_POSITIONS[i + 1][j] = ENEMY_COMING_RIGHT;
                         NEW_DISPLAY_POSITIONS[i][j] = 0;
@@ -759,6 +769,122 @@ void handleButtons(int button)
     button_unlock();
 }
 
+// Spawn enemies
+void spawnEnemies()
+{
+    if (spawnEnemy == 0)
+    {
+        int isArcher = randomNumber(10) < 2 ? 1 : 0;
+        int leftOrRight = randomNumber(1);
+        int upOrDown = randomNumber(1);
+        // left enemy spawn
+        if (leftOrRight == 0)
+        {
+            if (upOrDown == 0)
+            {
+                if (isArcher)
+                {
+                    lcd_send_command(DD_RAM_ADDR2);
+                    lcd_send_data(ENEMY_ARCHER_LEFT);
+                    DISPLAY_POSITIONS[1][0] = ENEMY_ARCHER_LEFT;
+                }
+                else
+                {
+                    if (DISPLAY_POSITIONS[1][0] == ENEMY_ARCHER_LEFT)
+                    {
+                        lcd_send_command(DD_RAM_ADDR2 + 1);
+                        lcd_send_data(ENEMY_COMING_LEFT);
+                        DISPLAY_POSITIONS[1][1] = ENEMY_COMING_LEFT;
+                    }
+                    else
+                    {
+                        lcd_send_command(DD_RAM_ADDR2);
+                        lcd_send_data(ENEMY_COMING_LEFT);
+                        DISPLAY_POSITIONS[1][0] = ENEMY_COMING_LEFT;
+                    }
+                }
+            }
+            else
+            {
+                if (isArcher)
+                {
+                    lcd_send_command(DD_RAM_ADDR);
+                    lcd_send_data(ENEMY_ARCHER_LEFT);
+                    DISPLAY_POSITIONS[0][0] = ENEMY_ARCHER_LEFT;
+                }
+                else
+                {
+                    if (DISPLAY_POSITIONS[0][0] == ENEMY_ARCHER_LEFT)
+                    {
+                        lcd_send_command(DD_RAM_ADDR + 1);
+                        lcd_send_data(ENEMY_COMING_LEFT);
+                        DISPLAY_POSITIONS[0][1] = ENEMY_COMING_LEFT;
+                    }
+                    else
+                    {
+                        lcd_send_command(DD_RAM_ADDR);
+                        lcd_send_data(ENEMY_COMING_LEFT);
+                        DISPLAY_POSITIONS[0][0] = ENEMY_COMING_LEFT;
+                    }
+                }
+            }
+        }
+        // right enemy spawn
+        else
+        {
+            if (upOrDown == 0)
+            {
+                if (isArcher)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + 15);
+                    lcd_send_data(ENEMY_ARCHER_RIGHT);
+                    DISPLAY_POSITIONS[1][15] = ENEMY_ARCHER_RIGHT;
+                }
+                else
+                {
+                    if (DISPLAY_POSITIONS[1][15] == ENEMY_ARCHER_RIGHT)
+                    {
+                        lcd_send_command(DD_RAM_ADDR2 + 14);
+                        lcd_send_data(ENEMY_COMING_RIGHT);
+                        DISPLAY_POSITIONS[1][14] = ENEMY_COMING_RIGHT;
+                    }
+                    else
+                    {
+                        lcd_send_command(DD_RAM_ADDR2 + 15);
+                        lcd_send_data(ENEMY_COMING_RIGHT);
+                        DISPLAY_POSITIONS[1][15] = ENEMY_COMING_RIGHT;
+                    }
+                }
+            }
+            else
+            {
+                if (isArcher)
+                {
+                    lcd_send_command(DD_RAM_ADDR + 15);
+                    lcd_send_data(ENEMY_ARCHER_RIGHT);
+                    DISPLAY_POSITIONS[0][15] = ENEMY_ARCHER_RIGHT;
+                }
+                else
+                {
+                    if (DISPLAY_POSITIONS[0][15] == ENEMY_ARCHER_RIGHT)
+                    {
+                        lcd_send_command(DD_RAM_ADDR + 14);
+                        lcd_send_data(ENEMY_COMING_RIGHT);
+                        DISPLAY_POSITIONS[0][14] = ENEMY_COMING_RIGHT;
+                    }
+                    else
+                    {
+                        lcd_send_command(DD_RAM_ADDR + 15);
+                        lcd_send_data(ENEMY_COMING_RIGHT);
+                        DISPLAY_POSITIONS[0][15] = ENEMY_COMING_RIGHT;
+                    }
+                }
+            }
+        }
+        spawnEnemy = randomNumber(8);
+    }
+}
+
 // sets the game over state
 void setGameOverState()
 {
@@ -837,45 +963,8 @@ int main()
         {
             spawnEnemy--;
         }
-        // Handle enemies
-        if (spawnEnemy == 0)
-        {
-            int leftOrRight = randomNumber(1);
-            int upOrDown = randomNumber(1);
-            // left enemy spawn
-            if (leftOrRight == 0)
-            {
-                if (upOrDown == 0)
-                {
-                    lcd_send_command(DD_RAM_ADDR2);
-                    lcd_send_data(ENEMY_COMING_LEFT);
-                    DISPLAY_POSITIONS[1][0] = ENEMY_COMING_LEFT;
-                }
-                else
-                {
-                    lcd_send_command(DD_RAM_ADDR);
-                    lcd_send_data(ENEMY_COMING_LEFT);
-                    DISPLAY_POSITIONS[0][0] = ENEMY_COMING_LEFT;
-                }
-            }
-            // right enemy spawn
-            else
-            {
-                if (upOrDown == 0)
-                {
-                    lcd_send_command(DD_RAM_ADDR2 + 15);
-                    lcd_send_data(ENEMY_COMING_RIGHT);
-                    DISPLAY_POSITIONS[1][15] = ENEMY_COMING_RIGHT;
-                }
-                else
-                {
-                    lcd_send_command(DD_RAM_ADDR + 15);
-                    lcd_send_data(ENEMY_COMING_RIGHT);
-                    DISPLAY_POSITIONS[0][15] = ENEMY_COMING_RIGHT;
-                }
-            }
-            spawnEnemy = randomNumber(8);
-        }
+        // Spawn enemies
+        spawnEnemies();
 
         // buttons handling
         handleButtons(button);
@@ -896,7 +985,7 @@ int main()
         }
 
         // check boss
-        if (playerScore == 2)
+        if (playerScore == 100)
         {
             break;
         }
