@@ -336,7 +336,7 @@ int enemyMovementCounter = 100000;
 int bossShotMovementCounter = 100000;
 int DISPLAY_POSITIONS[2][16] = {
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // 0 == nothing, 1 == player, 4 == enemy coming left, 5 == enemy coming right, 2 == BOSS body part, 3 == BOSS shot
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
+    {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0}};
 int PLAYER = 1;
 #define PLAYER_ATTACK_LEFT 2
 #define PLAYER_ATTACK_RIGHT 3
@@ -402,7 +402,7 @@ void resetDisplayPositions()
     }
 }
 
-// TODO REFINE MOVEMENT, MAKE IT MORE RANDOM AND SMOOTH
+// TODO ADD SOME AI TO ENEMIES
 void enemyMovement()
 {
     int NEW_DISPLAY_POSITIONS[2][16] = {
@@ -418,7 +418,6 @@ void enemyMovement()
             }
             else if (DISPLAY_POSITIONS[i][j] == ENEMY_COMING_LEFT)
             {
-                // TODO ENEMY MOVEMENT CORRECT UPDATE, EVEN IF ITS MOVING UP OR DOWN TO TRACK USER
                 if (j != 15)
                 {
                     if(playerRowNum == 0 && i != 0) {
@@ -434,28 +433,27 @@ void enemyMovement()
                     }
                 }
             }
-            // else if (DISPLAY_POSITIONS[i][j] == ENEMY_COMING_RIGHT)
-            // {
-            //     if (j != 0)
-            //     {
-            //         NEW_DISPLAY_POSITIONS[i][j - 1] = ENEMY_COMING_RIGHT;
-            //     }
-
-            //     if (i == 1)
-            //     {
-            //         lcd_send_command(DD_RAM_ADDR2 + j);
-            //         lcd_send_data(' ');
-            //         lcd_send_command(DD_RAM_ADDR2 + j - 1);
-            //         lcd_send_data(ENEMY_COMING_RIGHT);
-            //     }
-            //     else
-            //     {
-            //         lcd_send_command(DD_RAM_ADDR + j);
-            //         lcd_send_data(' ');
-            //         lcd_send_command(DD_RAM_ADDR + j - 1);
-            //         lcd_send_data(ENEMY_COMING_RIGHT);
-            //     }
-            // }
+            else if (DISPLAY_POSITIONS[i][j] == ENEMY_COMING_RIGHT)
+            {
+                if (j != 0)
+                {
+                    if (playerRowNum == 0 && i != 0)
+                    {
+                        NEW_DISPLAY_POSITIONS[i - 1][j] = ENEMY_COMING_RIGHT;
+                        NEW_DISPLAY_POSITIONS[i][j] = 0;
+                    }
+                    else if (playerRowNum == 1 && i != 1)
+                    {
+                        NEW_DISPLAY_POSITIONS[i + 1][j] = ENEMY_COMING_RIGHT;
+                        NEW_DISPLAY_POSITIONS[i][j] = 0;
+                    }
+                    else
+                    {
+                        NEW_DISPLAY_POSITIONS[i][j - 1] = ENEMY_COMING_RIGHT;
+                        NEW_DISPLAY_POSITIONS[i][j] = 0;
+                    }
+                }
+            }
         }
     }
     for (int i = 0; i < 2; ++i)
@@ -463,20 +461,41 @@ void enemyMovement()
         for (int j = 0; j < 16; ++j)
         {
             DISPLAY_POSITIONS[i][j] = NEW_DISPLAY_POSITIONS[i][j];
-            if (DISPLAY_POSITIONS[i][j] == ENEMY_COMING_LEFT){
+            if(DISPLAY_POSITIONS[i][j] == 0) {
                 if (i == 1)
                 {
-                    lcd_send_command(DD_RAM_ADDR2 + j - 1);
+                    lcd_send_command(DD_RAM_ADDR2 + j);
                     lcd_send_data(' ');
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + j);
+                    lcd_send_data(' ');
+                }
+            }
+            else if (DISPLAY_POSITIONS[i][j] == ENEMY_COMING_LEFT){
+                if (i == 1)
+                {
                     lcd_send_command(DD_RAM_ADDR2 + j);
                     lcd_send_data(ENEMY_COMING_LEFT);
                 }
                 else
                 {
-                    lcd_send_command(DD_RAM_ADDR + j - 1);
-                    lcd_send_data(' ');
                     lcd_send_command(DD_RAM_ADDR + j);
                     lcd_send_data(ENEMY_COMING_LEFT);
+                }
+            }
+            else if (DISPLAY_POSITIONS[i][j] == ENEMY_COMING_RIGHT)
+            {
+                if (i == 1)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + j);
+                    lcd_send_data(ENEMY_COMING_RIGHT);
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + j);
+                    lcd_send_data(ENEMY_COMING_RIGHT);
                 }
             }
         }
@@ -796,7 +815,7 @@ int main()
         }
 
         // check boss
-        if (playerScore == 2)
+        if (playerScore == 10)
         {
             break;
         }
