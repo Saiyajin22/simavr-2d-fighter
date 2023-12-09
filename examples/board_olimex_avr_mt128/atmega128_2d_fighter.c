@@ -388,9 +388,9 @@ int spawnEnemy = 0;
 int bossSwordCol = 14;
 int bossBodyCol = 15;
 int gameOver = 0;
-int enemyMovementCounter = 100000;
-int bossShotMovementCounter = 100000;
+int enemyMovementAndActionCounter = 0;
 int archerShootCount = 4;
+int enemyMovementAndActionCounterRefresh = 0;
 int DISPLAY_POSITIONS[2][16] = {
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // 0 == nothing, 1 == player, 4 == enemy coming left, 5 == enemy coming right, 2 == BOSS body part, 3 == BOSS shot, 6 == enemy archer left, 7 == enemy archer right
     {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0}};
@@ -412,6 +412,9 @@ int PLAYER = 1;
 #define PLAYER_BODY 1
 #define ARCHER_SHOT_LEFT 126
 #define ARCHER_SHOT_RIGHT 127
+#define EASY 1500000
+#define MEDIUM 100000
+#define HARD 21000
 
 void initCharacter()
 {
@@ -483,7 +486,6 @@ void resetDisplayPositions()
 // TODO ADD SOME AI TO ENEMIES
 // TODO, MAKE ENEMY AND BOSS SHOT SPAWNER MORE RANDOM
 
-// DIFFICULTY CHOOSING BETWEEN 4 LEVELS
 // SCOREBOARD
 void enemyMovement()
 {
@@ -508,16 +510,18 @@ void enemyMovement()
             }
             else if (DISPLAY_POSITIONS[i][j] == ARCHER_SHOT_LEFT)
             {
-                if(DISPLAY_POSITIONS[i][j + 1] != ENEMY_ARCHER_RIGHT) {
+                if (DISPLAY_POSITIONS[i][j + 1] != ENEMY_ARCHER_RIGHT)
+                {
                     NEW_DISPLAY_POSITIONS[i][j + 1] = ARCHER_SHOT_LEFT;
                 }
                 NEW_DISPLAY_POSITIONS[i][j] = 0;
             }
             else if (DISPLAY_POSITIONS[i][j] == ARCHER_SHOT_RIGHT)
             {
-                if (DISPLAY_POSITIONS[i][j - 1] != ENEMY_ARCHER_LEFT) {
+                if (DISPLAY_POSITIONS[i][j - 1] != ENEMY_ARCHER_LEFT)
+                {
                     NEW_DISPLAY_POSITIONS[i][j - 1] = ARCHER_SHOT_RIGHT;
-                } 
+                }
                 NEW_DISPLAY_POSITIONS[i][j] = 0;
             }
             else if (DISPLAY_POSITIONS[i][j] == ENEMY_COMING_LEFT)
@@ -1055,7 +1059,7 @@ int main()
     lcd_send_line1("   2D Fighter");
     lcd_send_line2("Press S to start");
 
-    // welcome screen
+    // welcome screen and difficulty selector
     while (1)
     {
         while (button_pressed() != BUTTON_DOWN)
@@ -1066,9 +1070,42 @@ int main()
         button_unlock();
         break;
     }
-    initCharacter();
+    lcd_send_line1("Chooz difficulty");
+    customSleep(8);
+    clearDisplay();
+    lcd_send_line1("A=easy, S=medium");
+    lcd_send_line2("D=hard");
+    while (1)
+    {
+        int button = button_pressed();
+        button_unlock();
+        if (button == BUTTON_LEFT)
+        {
+            enemyMovementAndActionCounterRefresh = EASY;
+            enemyMovementAndActionCounter = EASY;
+            break;
+        }
+        else if (button == BUTTON_DOWN)
+        {
+            enemyMovementAndActionCounterRefresh = MEDIUM;
+            enemyMovementAndActionCounter = MEDIUM;
+            break;
+        }
+        else if (button == BUTTON_RIGHT)
+        {
+            enemyMovementAndActionCounterRefresh = HARD;
+            enemyMovementAndActionCounter = HARD;
+            break;
+        }
+    }
+    clearDisplay();
+    lcd_send_line1("Game is starting");
+    customSleep(4);
+    clearDisplay();
+    customSleep(4);
 
     // game loop
+    initCharacter();
     while (1)
     {
         int button = button_pressed();
@@ -1085,15 +1122,16 @@ int main()
         handleButtons(button);
 
         // move enemies
-        enemyMovementCounter--;
-        if (enemyMovementCounter == 0)
+        enemyMovementAndActionCounter--;
+        if (enemyMovementAndActionCounter == 0)
         {
             enemyMovement();
-            enemyMovementCounter = 100000;
+            enemyMovementAndActionCounter = enemyMovementAndActionCounterRefresh;
         }
 
         // archer shot
-        if(archerShootCount == 0) {
+        if (archerShootCount == 0)
+        {
             int archerShoot = randomNumber(8);
             if (DISPLAY_POSITIONS[0][0] == ENEMY_ARCHER_LEFT && archerShoot <= 4)
             {
@@ -1224,11 +1262,11 @@ int main()
 
             handleButtons(button);
 
-            bossShotMovementCounter--;
-            if (bossShotMovementCounter == 0)
+            enemyMovementAndActionCounter--;
+            if (enemyMovementAndActionCounter == 0)
             {
                 bossShotMovement();
-                bossShotMovementCounter = 100000;
+                enemyMovementAndActionCounter = enemyMovementAndActionCounterRefresh;
             }
 
             // game over
