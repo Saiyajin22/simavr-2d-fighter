@@ -889,7 +889,7 @@ void spawnEnemies()
 {
     if (spawnEnemy == 0)
     {
-        int isArcher = randomNumber(10) < 3 ? 1 : 0;
+        int isArcher = randomNumber(10) < 2 ? 1 : 0;
         int leftOrRight = randomNumber(1);
         int upOrDown = randomNumber(1);
         // left enemy spawn
