@@ -390,7 +390,7 @@ int bossBodyCol = 15;
 int gameOver = 0;
 int enemyMovementCounter = 100000;
 int bossShotMovementCounter = 100000;
-int archerShoot = 3;
+int archerShootCount = 4;
 int DISPLAY_POSITIONS[2][16] = {
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // 0 == nothing, 1 == player, 4 == enemy coming left, 5 == enemy coming right, 2 == BOSS body part, 3 == BOSS shot, 6 == enemy archer left, 7 == enemy archer right
     {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0}};
@@ -779,13 +779,15 @@ void handleButtons(int button)
                 DISPLAY_POSITIONS[playerRowNum][playerCol - 3] = 0;
                 playerScore++;
             }
-            else if (DISPLAY_POSITIONS[playerRowNum][playerCol - 1] == ARCHER_SHOT_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 2] == ARCHER_SHOT_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 3] == ARCHER_SHOT_LEFT) {
+            else if (DISPLAY_POSITIONS[playerRowNum][playerCol - 1] == ARCHER_SHOT_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 2] == ARCHER_SHOT_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 3] == ARCHER_SHOT_LEFT)
+            {
                 DISPLAY_POSITIONS[playerRowNum][playerCol - 1] = 0;
                 DISPLAY_POSITIONS[playerRowNum][playerCol - 2] = 0;
                 DISPLAY_POSITIONS[playerRowNum][playerCol - 3] = 0;
                 playerScore += 5;
             }
-            else if (DISPLAY_POSITIONS[playerRowNum][playerCol - 1] == ENEMY_ARCHER_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 2] == ENEMY_ARCHER_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 3] == ENEMY_ARCHER_LEFT) {
+            else if (DISPLAY_POSITIONS[playerRowNum][playerCol - 1] == ENEMY_ARCHER_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 2] == ENEMY_ARCHER_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 3] == ENEMY_ARCHER_LEFT)
+            {
                 DISPLAY_POSITIONS[playerRowNum][playerCol - 1] = 0;
                 DISPLAY_POSITIONS[playerRowNum][playerCol - 2] = 0;
                 DISPLAY_POSITIONS[playerRowNum][playerCol - 3] = 0;
@@ -856,7 +858,7 @@ void spawnEnemies()
 {
     if (spawnEnemy == 0)
     {
-        int isArcher = randomNumber(10) < 8 ? 1 : 0;
+        int isArcher = randomNumber(10) < 3 ? 1 : 0;
         int leftOrRight = randomNumber(1);
         int upOrDown = randomNumber(1);
         // left enemy spawn
@@ -1043,7 +1045,7 @@ int main()
         if (button != BUTTON_NONE)
         {
             spawnEnemy--;
-            archerShoot--;
+            archerShootCount--;
         }
         // Spawn enemies
         spawnEnemies();
@@ -1060,35 +1062,34 @@ int main()
         }
 
         // archer shot
-        if (archerShoot == 0)
-        {
-            if (DISPLAY_POSITIONS[0][0] == ENEMY_ARCHER_LEFT)
+        if(archerShootCount == 0) {
+            int archerShoot = randomNumber(8);
+            if (DISPLAY_POSITIONS[0][0] == ENEMY_ARCHER_LEFT && archerShoot <= 4)
             {
-                DISPLAY_POSITIONS[0][1] = ARCHER_SHOT_LEFT; 
+                DISPLAY_POSITIONS[0][1] = ARCHER_SHOT_LEFT;
                 lcd_send_command(DD_RAM_ADDR + 1);
                 lcd_send_data(ARCHER_SHOT_LEFT);
             }
-            else if (DISPLAY_POSITIONS[1][0] == ENEMY_ARCHER_LEFT)
+            if (DISPLAY_POSITIONS[1][0] == ENEMY_ARCHER_LEFT && archerShoot <= 4)
             {
                 DISPLAY_POSITIONS[1][1] = ARCHER_SHOT_LEFT;
                 lcd_send_command(DD_RAM_ADDR2 + 1);
                 lcd_send_data(ARCHER_SHOT_LEFT);
             }
-            else if (DISPLAY_POSITIONS[0][15] == ENEMY_ARCHER_RIGHT)
+            if (DISPLAY_POSITIONS[0][15] == ENEMY_ARCHER_RIGHT && archerShoot >= 5)
             {
                 DISPLAY_POSITIONS[0][14] = ARCHER_SHOT_RIGHT;
                 lcd_send_command(DD_RAM_ADDR - 1);
                 lcd_send_data(ARCHER_SHOT_RIGHT);
             }
-            else if (DISPLAY_POSITIONS[1][15] == ENEMY_ARCHER_RIGHT)
+            if (DISPLAY_POSITIONS[1][15] == ENEMY_ARCHER_RIGHT && archerShoot >= 5)
             {
                 DISPLAY_POSITIONS[1][14] = ARCHER_SHOT_RIGHT;
                 lcd_send_command(DD_RAM_ADDR2 - 1);
                 lcd_send_data(ARCHER_SHOT_RIGHT);
             }
-            archerShoot = randomNumber(8);
+            archerShootCount = randomNumber(8);
         }
-
         // game over
         if (isPlayerDead())
         {
