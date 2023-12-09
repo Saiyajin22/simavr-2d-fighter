@@ -210,6 +210,62 @@ static void clearDisplay()
 }
 
 // CUSTOM CHARACTERS ------------------------------
+//  {
+//         0b11110,
+//         0b11110,
+//         0b11010,
+//         0b11010,
+//         0b00010,
+//         0b00010,
+//         0b00010,
+//         0b00010}, // 2 - Player attack left - AXE
+
+// {
+//         0b01111,
+//         0b01111,
+//         0b01011,
+//         0b01011,
+//         0b01000,
+//         0b01000,
+//         0b01000,
+//         0b01000}, // 3 - Player attack right -- AXE - UNUSED
+
+// {
+//     0b00000,
+//     0b00000,
+//     0b11111,
+//     0b00011,
+//     0b00011,
+//     0b00000,
+//     0b00000,
+//     0b00000}, // 6 - Enemy attack from left - AXE - UNUSED
+// {
+//     0b00000,
+//     0b00000,
+//     0b11111,
+//     0b11000,
+//     0b11000,
+//     0b00000,
+//     0b00000,
+//     0b00000}, // 7 - Enemy attack from right - AXE - UNUSED
+//  {
+//         0b11000,
+//         0b11010,
+//         0b10001,
+//         0b11111,
+//         0b10001,
+//         0b10010,
+//         0b11000,
+//         0b01000}, // 6 - Enemy archer left
+//   {
+//         0b00011,
+//         0b01011,
+//         0b10001,
+//         0b11111,
+//         0b10001,
+//         0b01001,
+//         0b00011,
+//         0b01000}, // 7 - Enemy archer right
 
 static unsigned char CUSTOM_CHARACTERS[8][8] = {
     {0b01110,
@@ -230,14 +286,14 @@ static unsigned char CUSTOM_CHARACTERS[8][8] = {
         0b01110,
         0b01010}, // 1 - Player looking right
     {
-        0b11110,
-        0b11110,
-        0b11010,
-        0b11010,
-        0b00010,
-        0b00010,
-        0b00010,
-        0b00010}, // 2 - Player attack left
+        0b00000,
+        0b10000,
+        0b10000,
+        0b01010,
+        0b00100,
+        0b01010,
+        0b00001,
+        0b00000}, // 2 - Player & enemy attack left -- SWORD
     {
         0b01111,
         0b01111,
@@ -246,7 +302,7 @@ static unsigned char CUSTOM_CHARACTERS[8][8] = {
         0b01000,
         0b01000,
         0b01000,
-        0b01000}, // 3 - Player attack right
+        0b01000}, // 3 - Player attack right -- AXE - UNUSED
     {
         0b11100,
         0b11000,
@@ -266,23 +322,23 @@ static unsigned char CUSTOM_CHARACTERS[8][8] = {
         0b00010,
         0b00101}, // 5 - Enemy coming from right
     {
-        0b00000,
-        0b00000,
+        0b11000,
+        0b11010,
+        0b10001,
         0b11111,
-        0b00011,
-        0b00011,
-        0b00000,
-        0b00000,
-        0b00000}, // 6 - Enemy attack from left
+        0b10001,
+        0b10010,
+        0b11000,
+        0b01000}, // 6 - Enemy archer left
     {
-        0b00000,
-        0b00000,
+        0b00011,
+        0b01011,
+        0b10001,
         0b11111,
-        0b11000,
-        0b11000,
-        0b00000,
-        0b00000,
-        0b00000}, // 7 - Enemy attack from right
+        0b10001,
+        0b01001,
+        0b00011,
+        0b00010}, // 7 - Enemy archer right
 };
 
 static void chars_init()
@@ -338,12 +394,12 @@ int DISPLAY_POSITIONS[2][16] = {
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // 0 == nothing, 1 == player, 4 == enemy coming left, 5 == enemy coming right, 2 == BOSS body part, 3 == BOSS shot
     {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0}};
 int PLAYER = 1;
-#define PLAYER_ATTACK_LEFT 2
-#define PLAYER_ATTACK_RIGHT 3
+#define PLAYER_ATTACK_LEFT 2    // sword - custom
+#define PLAYER_ATTACK_RIGHT 210 // sword - built in
 #define ENEMY_COMING_LEFT 4
 #define ENEMY_COMING_RIGHT 5
-#define ENEMY_ATTACK_LEFT 6
-#define ENEMY_ATTACK_RIGHT 7
+#define ENEMY_ATTACK_LEFT 210
+#define ENEMY_ATTACK_RIGHT 2
 #define UPPER_SWORD_PART 4
 #define LOWER_SWORD_PART 5
 #define BOSS_UPPER_PART 6
@@ -423,14 +479,18 @@ void enemyMovement()
             {
                 if (j != 15)
                 {
-                    if(playerRowNum == 0 && i != 0) {
-                        NEW_DISPLAY_POSITIONS[i-1][j] = ENEMY_COMING_LEFT;
+                    if (playerRowNum == 0 && i != 0)
+                    {
+                        NEW_DISPLAY_POSITIONS[i - 1][j] = ENEMY_COMING_LEFT;
                         NEW_DISPLAY_POSITIONS[i][j] = 0;
                     }
-                    else if (playerRowNum == 1 && i != 1) {
-                        NEW_DISPLAY_POSITIONS[i+1][j] = ENEMY_COMING_LEFT;
+                    else if (playerRowNum == 1 && i != 1)
+                    {
+                        NEW_DISPLAY_POSITIONS[i + 1][j] = ENEMY_COMING_LEFT;
                         NEW_DISPLAY_POSITIONS[i][j] = 0;
-                    } else {
+                    }
+                    else
+                    {
                         NEW_DISPLAY_POSITIONS[i][j + 1] = ENEMY_COMING_LEFT;
                         NEW_DISPLAY_POSITIONS[i][j] = 0;
                     }
@@ -464,7 +524,8 @@ void enemyMovement()
         for (int j = 0; j < 16; ++j)
         {
             DISPLAY_POSITIONS[i][j] = NEW_DISPLAY_POSITIONS[i][j];
-            if(DISPLAY_POSITIONS[i][j] == 0) {
+            if (DISPLAY_POSITIONS[i][j] == 0)
+            {
                 if (i == 1)
                 {
                     lcd_send_command(DD_RAM_ADDR2 + j);
@@ -476,7 +537,8 @@ void enemyMovement()
                     lcd_send_data(' ');
                 }
             }
-            else if (DISPLAY_POSITIONS[i][j] == ENEMY_COMING_LEFT){
+            else if (DISPLAY_POSITIONS[i][j] == ENEMY_COMING_LEFT)
+            {
                 if (i == 1)
                 {
                     lcd_send_command(DD_RAM_ADDR2 + j);
@@ -551,7 +613,8 @@ void bossShotMovement()
                     lcd_send_data(' ');
                 }
             }
-            else if(DISPLAY_POSITIONS[i][j] == BOSS_SHOT) {
+            else if (DISPLAY_POSITIONS[i][j] == BOSS_SHOT)
+            {
                 if (i == 1)
                 {
                     lcd_send_command(DD_RAM_ADDR2 + j);
@@ -617,7 +680,7 @@ void handleButtons(int button)
             playerRowNum = 0;
             lcd_send_command(playerRow + playerCol);
             lcd_send_data(PLAYER);
-            DISPLAY_POSITIONS[playerRowNum+1][playerCol] = 0;
+            DISPLAY_POSITIONS[playerRowNum + 1][playerCol] = 0;
             DISPLAY_POSITIONS[playerRowNum][playerCol] = 1;
         }
     }
@@ -819,11 +882,11 @@ int main()
 
         // move enemies
         enemyMovementCounter--;
-        if(enemyMovementCounter == 0) {
+        if (enemyMovementCounter == 0)
+        {
             enemyMovement();
             enemyMovementCounter = 100000;
         }
-        
 
         // game over
         if (isPlayerDead())
@@ -928,7 +991,8 @@ int main()
             handleButtons(button);
 
             bossShotMovementCounter--;
-            if (bossShotMovementCounter == 0) {
+            if (bossShotMovementCounter == 0)
+            {
                 bossShotMovement();
                 bossShotMovementCounter = 100000;
             }
