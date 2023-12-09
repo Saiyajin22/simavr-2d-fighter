@@ -448,6 +448,22 @@ int isPlayerDead()
     {
         return 1;
     }
+    else if (DISPLAY_POSITIONS[playerRowNum][playerCol] == ARCHER_SHOT_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol] == ARCHER_SHOT_RIGHT)
+    {
+        return 1;
+    }
+    else if (DISPLAY_POSITIONS[playerRowNum][playerCol - 1] == ENEMY_ARCHER_LEFT)
+    {
+        lcd_send_command(playerRow + playerCol);
+        lcd_send_data(ENEMY_ATTACK_LEFT);
+        return 1;
+    }
+    else if (DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == ENEMY_ARCHER_RIGHT)
+    {
+        lcd_send_command(playerRow + playerCol);
+        lcd_send_data(ENEMY_ARCHER_RIGHT);
+        return 1;
+    }
 
     return 0;
 }
@@ -465,7 +481,6 @@ void resetDisplayPositions()
 }
 
 // TODO ADD SOME AI TO ENEMIES
-// TODO ADD MORE BASIC ENEMY TYPES. E.G: ARCHER
 // TODO, MAKE ENEMY AND BOSS SHOT SPAWNER MORE RANDOM
 // DIFFICULTY CHOOSING BETWEEN 4 LEVELS
 // SCOREBOARD
@@ -478,7 +493,7 @@ void enemyMovement()
     {
         for (int j = 0; j < 16; ++j)
         {
-            if (DISPLAY_POSITIONS[i][j] == PLAYER_BODY)
+            if (DISPLAY_POSITIONS[i][j] == PLAYER_BODY && DISPLAY_POSITIONS[i][j + 1] != ARCHER_SHOT_RIGHT && DISPLAY_POSITIONS[i][j - 1] != ARCHER_SHOT_LEFT)
             {
                 NEW_DISPLAY_POSITIONS[i][j] = PLAYER_BODY;
             }
@@ -764,6 +779,18 @@ void handleButtons(int button)
                 DISPLAY_POSITIONS[playerRowNum][playerCol - 3] = 0;
                 playerScore++;
             }
+            else if (DISPLAY_POSITIONS[playerRowNum][playerCol - 1] == ARCHER_SHOT_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 2] == ARCHER_SHOT_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 3] == ARCHER_SHOT_LEFT) {
+                DISPLAY_POSITIONS[playerRowNum][playerCol - 1] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol - 2] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol - 3] = 0;
+                playerScore += 5;
+            }
+            else if (DISPLAY_POSITIONS[playerRowNum][playerCol - 1] == ENEMY_ARCHER_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 2] == ENEMY_ARCHER_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 3] == ENEMY_ARCHER_LEFT) {
+                DISPLAY_POSITIONS[playerRowNum][playerCol - 1] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol - 2] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol - 3] = 0;
+                playerScore += 20;
+            }
             wait(10, 32000);
             lcd_send_command(playerRow + playerCol - 1);
             lcd_send_data(' ');
@@ -783,6 +810,20 @@ void handleButtons(int button)
                 DISPLAY_POSITIONS[playerRowNum][playerCol + 3] = 0;
                 playerScore++;
             }
+            else if (DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == ARCHER_SHOT_RIGHT || DISPLAY_POSITIONS[playerRowNum][playerCol + 2] == ARCHER_SHOT_RIGHT || DISPLAY_POSITIONS[playerRowNum][playerCol + 3] == ARCHER_SHOT_RIGHT)
+            {
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 1] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 2] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 3] = 0;
+                playerScore += 5;
+            }
+            else if (DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == ENEMY_ARCHER_RIGHT || DISPLAY_POSITIONS[playerRowNum][playerCol + 2] == ENEMY_ARCHER_RIGHT || DISPLAY_POSITIONS[playerRowNum][playerCol + 3] == ENEMY_ARCHER_RIGHT)
+            {
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 1] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 2] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 3] = 0;
+                playerScore += 20;
+            }
             else if (DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == BOSS_BODY_PART || DISPLAY_POSITIONS[playerRowNum][playerCol + 2] == BOSS_BODY_PART || DISPLAY_POSITIONS[playerRowNum][playerCol + 3] == BOSS_BODY_PART)
             {
                 DISPLAY_POSITIONS[playerRowNum][playerCol + 1] = 0;
@@ -795,7 +836,7 @@ void handleButtons(int button)
                 DISPLAY_POSITIONS[playerRowNum][playerCol + 1] = 0;
                 DISPLAY_POSITIONS[playerRowNum][playerCol + 2] = 0;
                 DISPLAY_POSITIONS[playerRowNum][playerCol + 3] = 0;
-                playerScore += 5;
+                playerScore += 10;
             }
             wait(10, 32000);
             lcd_send_command(playerRow + playerCol + 1);
@@ -815,7 +856,7 @@ void spawnEnemies()
 {
     if (spawnEnemy == 0)
     {
-        int isArcher = randomNumber(10) < 2 ? 1 : 0;
+        int isArcher = randomNumber(10) < 8 ? 1 : 0;
         int leftOrRight = randomNumber(1);
         int upOrDown = randomNumber(1);
         // left enemy spawn
@@ -1045,41 +1086,6 @@ int main()
                 lcd_send_command(DD_RAM_ADDR2 - 1);
                 lcd_send_data(ARCHER_SHOT_RIGHT);
             }
-
-            // for (int i = 0; i < 16; ++i)
-            // {
-            //     for (int j = 0; j < 16; ++j)
-            //     {
-            //         if (DISPLAY_POSITIONS[i][j] == ENEMY_ARCHER_LEFT)
-            //         {
-            //             DISPLAY_POSITIONS[i][j + 1] == ARCHER_SHOT_LEFT;
-            //             if (i == 1)
-            //             {
-            //                 lcd_send_command(DD_RAM_ADDR2 + j + 1);
-            //                 lcd_send_data(ARCHER_SHOT_LEFT);
-            //             }
-            //             else
-            //             {
-            //                 lcd_send_command(DD_RAM_ADDR + j + 1);
-            //                 lcd_send_data(ARCHER_SHOT_LEFT);
-            //             }
-            //         }
-            //         else if (DISPLAY_POSITIONS[i][j] == ENEMY_ARCHER_RIGHT)
-            //         {
-            //             DISPLAY_POSITIONS[i][j - 1] == ARCHER_SHOT_RIGHT;
-            //             if (i == 1)
-            //             {
-            //                 lcd_send_command(DD_RAM_ADDR2 + j - 1);
-            //                 lcd_send_data(ARCHER_SHOT_RIGHT);
-            //             }
-            //             else
-            //             {
-            //                 lcd_send_command(DD_RAM_ADDR + j - 1);
-            //                 lcd_send_data(ARCHER_SHOT_RIGHT);
-            //             }
-            //         }
-            //     }
-            // }
             archerShoot = randomNumber(8);
         }
 
@@ -1091,7 +1097,7 @@ int main()
         }
 
         // check boss
-        if (playerScore == 100)
+        if (playerScore >= 100)
         {
             break;
         }
