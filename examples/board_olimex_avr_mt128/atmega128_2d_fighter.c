@@ -482,6 +482,7 @@ void resetDisplayPositions()
 
 // TODO ADD SOME AI TO ENEMIES
 // TODO, MAKE ENEMY AND BOSS SHOT SPAWNER MORE RANDOM
+
 // DIFFICULTY CHOOSING BETWEEN 4 LEVELS
 // SCOREBOARD
 void enemyMovement()
@@ -507,12 +508,16 @@ void enemyMovement()
             }
             else if (DISPLAY_POSITIONS[i][j] == ARCHER_SHOT_LEFT)
             {
-                NEW_DISPLAY_POSITIONS[i][j + 1] = ARCHER_SHOT_LEFT;
+                if(DISPLAY_POSITIONS[i][j + 1] != ENEMY_ARCHER_RIGHT) {
+                    NEW_DISPLAY_POSITIONS[i][j + 1] = ARCHER_SHOT_LEFT;
+                }
                 NEW_DISPLAY_POSITIONS[i][j] = 0;
             }
             else if (DISPLAY_POSITIONS[i][j] == ARCHER_SHOT_RIGHT)
             {
-                NEW_DISPLAY_POSITIONS[i][j - 1] = ARCHER_SHOT_RIGHT;
+                if (DISPLAY_POSITIONS[i][j - 1] != ENEMY_ARCHER_LEFT) {
+                    NEW_DISPLAY_POSITIONS[i][j - 1] = ARCHER_SHOT_RIGHT;
+                } 
                 NEW_DISPLAY_POSITIONS[i][j] = 0;
             }
             else if (DISPLAY_POSITIONS[i][j] == ENEMY_COMING_LEFT)
@@ -627,6 +632,32 @@ void enemyMovement()
                 {
                     lcd_send_command(DD_RAM_ADDR + j);
                     lcd_send_data(ARCHER_SHOT_RIGHT);
+                }
+            }
+            else if (DISPLAY_POSITIONS[i][j] == ENEMY_ARCHER_LEFT)
+            {
+                if (i == 1)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + j);
+                    lcd_send_data(ENEMY_ARCHER_LEFT);
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + j);
+                    lcd_send_data(ENEMY_ARCHER_LEFT);
+                }
+            }
+            else if (DISPLAY_POSITIONS[i][j] == ENEMY_ARCHER_RIGHT)
+            {
+                if (i == 1)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + j);
+                    lcd_send_data(ENEMY_ARCHER_RIGHT);
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + j);
+                    lcd_send_data(ENEMY_ARCHER_RIGHT);
                 }
             }
         }
@@ -1090,6 +1121,7 @@ int main()
             }
             archerShootCount = randomNumber(8);
         }
+
         // game over
         if (isPlayerDead())
         {
