@@ -400,9 +400,12 @@ void resetDisplayPositions()
             DISPLAY_POSITIONS[i][j] = 0;
         }
     }
+    DISPLAY_POSITIONS[playerRowNum][playerCol] = 1;
 }
 
 // TODO ADD SOME AI TO ENEMIES
+// TODO ADD MORE BASIC ENEMY TYPES. E.G: ARCHER
+// TODO, MAKE ENEMY AND BOSS SHOT SPAWNER MORE RANDOM
 void enemyMovement()
 {
     int NEW_DISPLAY_POSITIONS[2][16] = {
@@ -512,26 +515,16 @@ void bossShotMovement()
     {
         for (int j = 0; j < 16; ++j)
         {
-            if (DISPLAY_POSITIONS[i][j] == BOSS_SHOT)
+            if (DISPLAY_POSITIONS[i][j] == PLAYER_BODY)
+            {
+                NEW_DISPLAY_POSITIONS[i][j] = PLAYER_BODY;
+            }
+            else if (DISPLAY_POSITIONS[i][j] == BOSS_SHOT)
             {
                 if (j != 0)
                 {
                     NEW_DISPLAY_POSITIONS[i][j - 1] = BOSS_SHOT;
-                }
-
-                if (i == 1)
-                {
-                    lcd_send_command(DD_RAM_ADDR2 + j);
-                    lcd_send_data(' ');
-                    lcd_send_command(DD_RAM_ADDR2 + j - 1);
-                    lcd_send_data('*');
-                }
-                else
-                {
-                    lcd_send_command(DD_RAM_ADDR + j);
-                    lcd_send_data(' ');
-                    lcd_send_command(DD_RAM_ADDR + j - 1);
-                    lcd_send_data('*');
+                    NEW_DISPLAY_POSITIONS[i][j] = 0;
                 }
             }
             else if (DISPLAY_POSITIONS[i][j] == BOSS_BODY_PART)
@@ -545,6 +538,31 @@ void bossShotMovement()
         for (int j = 0; j < 16; ++j)
         {
             DISPLAY_POSITIONS[i][j] = NEW_DISPLAY_POSITIONS[i][j];
+            if (DISPLAY_POSITIONS[i][j] == 0)
+            {
+                if (i == 1)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + j);
+                    lcd_send_data(' ');
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + j);
+                    lcd_send_data(' ');
+                }
+            }
+            else if(DISPLAY_POSITIONS[i][j] == BOSS_SHOT) {
+                if (i == 1)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + j);
+                    lcd_send_data('*');
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + j);
+                    lcd_send_data('*');
+                }
+            }
         }
     }
     // wait(13, 32000);
@@ -815,7 +833,7 @@ int main()
         }
 
         // check boss
-        if (playerScore == 10)
+        if (playerScore == 2)
         {
             break;
         }
@@ -883,13 +901,12 @@ int main()
         while (1)
         {
             int button = button_pressed();
-            handleButtons(button);
 
             if (button != BUTTON_NONE)
             {
                 shoot--;
             }
-            // Handle enemies
+            // Handle boss shot
             if (shoot == 0)
             {
                 int upOrDown = randomNumber(1);
@@ -908,12 +925,13 @@ int main()
                 shoot = randomNumber(5);
             }
 
+            handleButtons(button);
+
             bossShotMovementCounter--;
             if (bossShotMovementCounter == 0) {
                 bossShotMovement();
                 bossShotMovementCounter = 100000;
             }
-                
 
             // game over
             if (isPlayerDead())
