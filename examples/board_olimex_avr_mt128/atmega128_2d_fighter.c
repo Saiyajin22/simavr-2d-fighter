@@ -391,6 +391,7 @@ int gameOver = 0;
 int enemyMovementAndActionCounter = 0;
 int archerShootCount = 4;
 int enemyMovementAndActionCounterRefresh = 0;
+char restart = 0;
 int DISPLAY_POSITIONS[2][16] = {
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // 0 == nothing, 1 == player, 4 == enemy coming left, 5 == enemy coming right, 2 == BOSS body part, 3 == BOSS shot, 6 == enemy archer left, 7 == enemy archer right
     {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0}};
@@ -415,6 +416,60 @@ int PLAYER = 1;
 #define EASY 1500000
 #define MEDIUM 100000
 #define HARD 21000
+
+void resetGame()
+{
+    playerCol = 7;
+    playerRow = DD_RAM_ADDR2;
+    playerRowNum = 1;
+    playerScore = 0;
+    spawnEnemy = 0;
+    bossSwordCol = 14;
+    bossBodyCol = 15;
+    gameOver = 0;
+    enemyMovementAndActionCounter = 0;
+    archerShootCount = 4;
+    enemyMovementAndActionCounterRefresh = 0;
+    restart = 0;
+    PLAYER = 1;
+    resetDisplayPositions();
+    CUSTOM_CHARACTERS[4][0] = 0b11100;
+    CUSTOM_CHARACTERS[4][1] = 0b11000;
+    CUSTOM_CHARACTERS[4][2] = 0b01011;
+    CUSTOM_CHARACTERS[4][3] = 0b01011;
+    CUSTOM_CHARACTERS[4][4] = 0b01110;
+    CUSTOM_CHARACTERS[4][5] = 0b01010;
+    CUSTOM_CHARACTERS[4][6] = 0b01000;
+    CUSTOM_CHARACTERS[4][7] = 0b10100; // 4 - Enemy coming from left
+
+    CUSTOM_CHARACTERS[5][0] = 0b00111;
+    CUSTOM_CHARACTERS[5][1] = 0b00011;
+    CUSTOM_CHARACTERS[5][2] = 0b11010;
+    CUSTOM_CHARACTERS[5][3] = 0b11010;
+    CUSTOM_CHARACTERS[5][4] = 0b01110;
+    CUSTOM_CHARACTERS[5][5] = 0b01010;
+    CUSTOM_CHARACTERS[5][6] = 0b00010;
+    CUSTOM_CHARACTERS[5][7] = 0b00101; // 5 - Enemy coming from right
+
+    CUSTOM_CHARACTERS[6][0] = 0b11000;
+    CUSTOM_CHARACTERS[6][1] = 0b11010;
+    CUSTOM_CHARACTERS[6][2] = 0b10001;
+    CUSTOM_CHARACTERS[6][3] = 0b11111;
+    CUSTOM_CHARACTERS[6][4] = 0b10001;
+    CUSTOM_CHARACTERS[6][5] = 0b10010;
+    CUSTOM_CHARACTERS[6][6] = 0b11000;
+    CUSTOM_CHARACTERS[6][7] = 0b01000; // 6 - Enemy archer left
+
+    CUSTOM_CHARACTERS[7][0] = 0b00011;
+    CUSTOM_CHARACTERS[7][1] = 0b01011;
+    CUSTOM_CHARACTERS[7][2] = 0b10001;
+    CUSTOM_CHARACTERS[7][3] = 0b11111;
+    CUSTOM_CHARACTERS[7][4] = 0b10001;
+    CUSTOM_CHARACTERS[7][5] = 0b01001;
+    CUSTOM_CHARACTERS[7][6] = 0b00011;
+    CUSTOM_CHARACTERS[7][7] = 0b00010; // 7 - Enemy archer right
+    chars_init();
+}
 
 void initCharacter()
 {
@@ -1004,16 +1059,15 @@ void spawnEnemies()
     }
 }
 
-// sets the game over state
-void setGameOverState()
+// sets the end game state
+void endGameState(char *state)
 {
     gameOver = 1;
     customSleep(1);
     clearDisplay();
-    lcd_send_line1("   GAME OVER!");
-    char score[4];
-    snprintf(score, sizeof(score), "%d", playerScore);
-    char *scoreText = strcat(" YOUR SCORE: ", score);
+    lcd_send_line1(state);
+    char scoreText[20];
+    sprintf(scoreText, " YOUR SCORE: %d", playerScore);
     lcd_send_line2(scoreText);
 }
 
@@ -1039,17 +1093,6 @@ int checkWin()
     return 1;
 }
 
-void setWinState()
-{
-    customSleep(1);
-    clearDisplay();
-    lcd_send_line1("   YOU WON!");
-    char score[4];
-    snprintf(score, sizeof(score), "%d", playerScore);
-    char *scoreText = strcat(" YOUR SCORE: ", score);
-    lcd_send_line2(scoreText);
-}
-
 // THE GAME -----------------------------------------------
 int main()
 {
@@ -1070,217 +1113,244 @@ int main()
         button_unlock();
         break;
     }
-    lcd_send_line1("Chooz difficulty");
-    customSleep(8);
-    clearDisplay();
-    lcd_send_line1("A=easy, S=medium");
-    lcd_send_line2("D=hard");
+
     while (1)
     {
-        int button = button_pressed();
-        button_unlock();
-        if (button == BUTTON_LEFT)
+        restart = 0;
+        lcd_send_line1("Chooz difficulty");
+        customSleep(8);
+        clearDisplay();
+        lcd_send_line1("A=easy, S=medium");
+        lcd_send_line2("D=hard");
+        while (1)
         {
-            enemyMovementAndActionCounterRefresh = EASY;
-            enemyMovementAndActionCounter = EASY;
-            break;
-        }
-        else if (button == BUTTON_DOWN)
-        {
-            enemyMovementAndActionCounterRefresh = MEDIUM;
-            enemyMovementAndActionCounter = MEDIUM;
-            break;
-        }
-        else if (button == BUTTON_RIGHT)
-        {
-            enemyMovementAndActionCounterRefresh = HARD;
-            enemyMovementAndActionCounter = HARD;
-            break;
-        }
-    }
-    clearDisplay();
-    lcd_send_line1("Game is starting");
-    customSleep(4);
-    clearDisplay();
-    customSleep(4);
-
-    // game loop
-    initCharacter();
-    while (1)
-    {
-        int button = button_pressed();
-
-        if (button != BUTTON_NONE)
-        {
-            spawnEnemy--;
-            archerShootCount--;
-        }
-        // Spawn enemies
-        spawnEnemies();
-
-        // buttons handling
-        handleButtons(button);
-
-        // move enemies
-        enemyMovementAndActionCounter--;
-        if (enemyMovementAndActionCounter == 0)
-        {
-            enemyMovement();
-            enemyMovementAndActionCounter = enemyMovementAndActionCounterRefresh;
-        }
-
-        // archer shot
-        if (archerShootCount == 0)
-        {
-            int archerShoot = randomNumber(8);
-            if (DISPLAY_POSITIONS[0][0] == ENEMY_ARCHER_LEFT && archerShoot <= 4)
+            int button = button_pressed();
+            button_unlock();
+            if (button == BUTTON_LEFT)
             {
-                DISPLAY_POSITIONS[0][1] = ARCHER_SHOT_LEFT;
-                lcd_send_command(DD_RAM_ADDR + 1);
-                lcd_send_data(ARCHER_SHOT_LEFT);
+                enemyMovementAndActionCounterRefresh = EASY;
+                enemyMovementAndActionCounter = EASY;
+                break;
             }
-            if (DISPLAY_POSITIONS[1][0] == ENEMY_ARCHER_LEFT && archerShoot <= 4)
+            else if (button == BUTTON_DOWN)
             {
-                DISPLAY_POSITIONS[1][1] = ARCHER_SHOT_LEFT;
-                lcd_send_command(DD_RAM_ADDR2 + 1);
-                lcd_send_data(ARCHER_SHOT_LEFT);
+                enemyMovementAndActionCounterRefresh = MEDIUM;
+                enemyMovementAndActionCounter = MEDIUM;
+                break;
             }
-            if (DISPLAY_POSITIONS[0][15] == ENEMY_ARCHER_RIGHT && archerShoot >= 5)
+            else if (button == BUTTON_RIGHT)
             {
-                DISPLAY_POSITIONS[0][14] = ARCHER_SHOT_RIGHT;
-                lcd_send_command(DD_RAM_ADDR - 1);
-                lcd_send_data(ARCHER_SHOT_RIGHT);
+                enemyMovementAndActionCounterRefresh = HARD;
+                enemyMovementAndActionCounter = HARD;
+                break;
             }
-            if (DISPLAY_POSITIONS[1][15] == ENEMY_ARCHER_RIGHT && archerShoot >= 5)
-            {
-                DISPLAY_POSITIONS[1][14] = ARCHER_SHOT_RIGHT;
-                lcd_send_command(DD_RAM_ADDR2 - 1);
-                lcd_send_data(ARCHER_SHOT_RIGHT);
-            }
-            archerShootCount = randomNumber(8);
         }
+        clearDisplay();
+        lcd_send_line1("Game is starting");
+        customSleep(4);
+        clearDisplay();
+        customSleep(4);
 
-        // game over
-        if (isPlayerDead())
-        {
-            setGameOverState();
-            break;
-        }
-
-        // check boss
-        if (playerScore >= 100)
-        {
-            break;
-        }
-    }
-
-    if (!gameOver)
-    {
-
-        // init boss custom chars
-        CUSTOM_CHARACTERS[4][0] = 0b00100;
-        CUSTOM_CHARACTERS[4][1] = 0b00100;
-        CUSTOM_CHARACTERS[4][2] = 0b00100;
-        CUSTOM_CHARACTERS[4][3] = 0b00100;
-        CUSTOM_CHARACTERS[4][4] = 0b00100;
-        CUSTOM_CHARACTERS[4][5] = 0b01110;
-        CUSTOM_CHARACTERS[4][6] = 0b00100;
-        CUSTOM_CHARACTERS[4][7] = 0b00100; // upper sword part
-
-        CUSTOM_CHARACTERS[5][0] = 0b11111;
-        CUSTOM_CHARACTERS[5][1] = 0b00111;
-        CUSTOM_CHARACTERS[5][2] = 0b00100;
-        CUSTOM_CHARACTERS[5][3] = 0b00100;
-        CUSTOM_CHARACTERS[5][4] = 0b00000;
-        CUSTOM_CHARACTERS[5][5] = 0b00000;
-        CUSTOM_CHARACTERS[5][6] = 0b00000;
-        CUSTOM_CHARACTERS[5][7] = 0b00000; // lower sword part
-
-        CUSTOM_CHARACTERS[6][0] = 0b10000;
-        CUSTOM_CHARACTERS[6][1] = 0b10101;
-        CUSTOM_CHARACTERS[6][2] = 0b11111;
-        CUSTOM_CHARACTERS[6][3] = 0b10000;
-        CUSTOM_CHARACTERS[6][4] = 0b11001;
-        CUSTOM_CHARACTERS[6][5] = 0b10110;
-        CUSTOM_CHARACTERS[6][6] = 0b11111;
-        CUSTOM_CHARACTERS[6][7] = 0b01111; // upper boss part
-
-        CUSTOM_CHARACTERS[7][0] = 0b01001;
-        CUSTOM_CHARACTERS[7][1] = 0b11111;
-        CUSTOM_CHARACTERS[7][2] = 0b11111;
-        CUSTOM_CHARACTERS[7][3] = 0b01001;
-        CUSTOM_CHARACTERS[7][4] = 0b01111;
-        CUSTOM_CHARACTERS[7][5] = 0b01111;
-        CUSTOM_CHARACTERS[7][6] = 0b01001;
-        CUSTOM_CHARACTERS[7][7] = 0b11111; // lower boss part
-
-        chars_init();
-        resetDisplayPositions();
-
-        // render boss
-        lcd_send_command(DD_RAM_ADDR + bossSwordCol);
-        lcd_send_data(UPPER_SWORD_PART);
-        lcd_send_command(DD_RAM_ADDR2 + bossSwordCol);
-        lcd_send_data(LOWER_SWORD_PART);
-        lcd_send_command(DD_RAM_ADDR + bossBodyCol);
-        lcd_send_data(BOSS_UPPER_PART);
-        lcd_send_command(DD_RAM_ADDR2 + bossBodyCol);
-        lcd_send_data(BOSS_LOWER_PART);
-        DISPLAY_POSITIONS[0][bossSwordCol] = 2;
-        DISPLAY_POSITIONS[1][bossSwordCol] = 2;
-        DISPLAY_POSITIONS[0][bossBodyCol] = 2;
-        DISPLAY_POSITIONS[1][bossBodyCol] = 2;
-
-        int shoot = 1;
-        // boss fight
+        // game loop
+        initCharacter();
         while (1)
         {
             int button = button_pressed();
 
             if (button != BUTTON_NONE)
             {
-                shoot--;
+                spawnEnemy--;
+                archerShootCount--;
             }
-            // Handle boss shot
-            if (shoot == 0)
-            {
-                int upOrDown = randomNumber(1);
-                if (upOrDown == 0)
-                {
-                    lcd_send_command(DD_RAM_ADDR2 + 13);
-                    lcd_send_data('*');
-                    DISPLAY_POSITIONS[1][13] = BOSS_SHOT;
-                }
-                else
-                {
-                    lcd_send_command(DD_RAM_ADDR + 13);
-                    lcd_send_data('*');
-                    DISPLAY_POSITIONS[0][13] = BOSS_SHOT;
-                }
-                shoot = randomNumber(5);
-            }
+            // Spawn enemies
+            spawnEnemies();
 
+            // buttons handling
             handleButtons(button);
 
+            // move enemies
             enemyMovementAndActionCounter--;
             if (enemyMovementAndActionCounter == 0)
             {
-                bossShotMovement();
+                enemyMovement();
                 enemyMovementAndActionCounter = enemyMovementAndActionCounterRefresh;
+            }
+
+            // archer shot
+            if (archerShootCount == 0)
+            {
+                int archerShoot = randomNumber(8);
+                if (DISPLAY_POSITIONS[0][0] == ENEMY_ARCHER_LEFT && archerShoot <= 4)
+                {
+                    DISPLAY_POSITIONS[0][1] = ARCHER_SHOT_LEFT;
+                    lcd_send_command(DD_RAM_ADDR + 1);
+                    lcd_send_data(ARCHER_SHOT_LEFT);
+                }
+                if (DISPLAY_POSITIONS[1][0] == ENEMY_ARCHER_LEFT && archerShoot <= 4)
+                {
+                    DISPLAY_POSITIONS[1][1] = ARCHER_SHOT_LEFT;
+                    lcd_send_command(DD_RAM_ADDR2 + 1);
+                    lcd_send_data(ARCHER_SHOT_LEFT);
+                }
+                if (DISPLAY_POSITIONS[0][15] == ENEMY_ARCHER_RIGHT && archerShoot >= 5)
+                {
+                    DISPLAY_POSITIONS[0][14] = ARCHER_SHOT_RIGHT;
+                    lcd_send_command(DD_RAM_ADDR - 1);
+                    lcd_send_data(ARCHER_SHOT_RIGHT);
+                }
+                if (DISPLAY_POSITIONS[1][15] == ENEMY_ARCHER_RIGHT && archerShoot >= 5)
+                {
+                    DISPLAY_POSITIONS[1][14] = ARCHER_SHOT_RIGHT;
+                    lcd_send_command(DD_RAM_ADDR2 - 1);
+                    lcd_send_data(ARCHER_SHOT_RIGHT);
+                }
+                archerShootCount = randomNumber(8);
             }
 
             // game over
             if (isPlayerDead())
             {
-                setGameOverState();
+                endGameState("   GAME OVER!");
                 break;
             }
 
-            if (checkWin())
+            // check boss
+            if (playerScore >= 100)
             {
-                setWinState();
                 break;
             }
+        }
+
+        if (!gameOver)
+        {
+
+            // init boss custom chars
+            CUSTOM_CHARACTERS[4][0] = 0b00100;
+            CUSTOM_CHARACTERS[4][1] = 0b00100;
+            CUSTOM_CHARACTERS[4][2] = 0b00100;
+            CUSTOM_CHARACTERS[4][3] = 0b00100;
+            CUSTOM_CHARACTERS[4][4] = 0b00100;
+            CUSTOM_CHARACTERS[4][5] = 0b01110;
+            CUSTOM_CHARACTERS[4][6] = 0b00100;
+            CUSTOM_CHARACTERS[4][7] = 0b00100; // upper sword part
+
+            CUSTOM_CHARACTERS[5][0] = 0b11111;
+            CUSTOM_CHARACTERS[5][1] = 0b00111;
+            CUSTOM_CHARACTERS[5][2] = 0b00100;
+            CUSTOM_CHARACTERS[5][3] = 0b00100;
+            CUSTOM_CHARACTERS[5][4] = 0b00000;
+            CUSTOM_CHARACTERS[5][5] = 0b00000;
+            CUSTOM_CHARACTERS[5][6] = 0b00000;
+            CUSTOM_CHARACTERS[5][7] = 0b00000; // lower sword part
+
+            CUSTOM_CHARACTERS[6][0] = 0b10000;
+            CUSTOM_CHARACTERS[6][1] = 0b10101;
+            CUSTOM_CHARACTERS[6][2] = 0b11111;
+            CUSTOM_CHARACTERS[6][3] = 0b10000;
+            CUSTOM_CHARACTERS[6][4] = 0b11001;
+            CUSTOM_CHARACTERS[6][5] = 0b10110;
+            CUSTOM_CHARACTERS[6][6] = 0b11111;
+            CUSTOM_CHARACTERS[6][7] = 0b01111; // upper boss part
+
+            CUSTOM_CHARACTERS[7][0] = 0b01001;
+            CUSTOM_CHARACTERS[7][1] = 0b11111;
+            CUSTOM_CHARACTERS[7][2] = 0b11111;
+            CUSTOM_CHARACTERS[7][3] = 0b01001;
+            CUSTOM_CHARACTERS[7][4] = 0b01111;
+            CUSTOM_CHARACTERS[7][5] = 0b01111;
+            CUSTOM_CHARACTERS[7][6] = 0b01001;
+            CUSTOM_CHARACTERS[7][7] = 0b11111; // lower boss part
+
+            chars_init();
+            resetDisplayPositions();
+
+            // render boss
+            lcd_send_command(DD_RAM_ADDR + bossSwordCol);
+            lcd_send_data(UPPER_SWORD_PART);
+            lcd_send_command(DD_RAM_ADDR2 + bossSwordCol);
+            lcd_send_data(LOWER_SWORD_PART);
+            lcd_send_command(DD_RAM_ADDR + bossBodyCol);
+            lcd_send_data(BOSS_UPPER_PART);
+            lcd_send_command(DD_RAM_ADDR2 + bossBodyCol);
+            lcd_send_data(BOSS_LOWER_PART);
+            DISPLAY_POSITIONS[0][bossSwordCol] = 2;
+            DISPLAY_POSITIONS[1][bossSwordCol] = 2;
+            DISPLAY_POSITIONS[0][bossBodyCol] = 2;
+            DISPLAY_POSITIONS[1][bossBodyCol] = 2;
+
+            int shoot = 1;
+            // boss fight
+            while (1)
+            {
+                int button = button_pressed();
+
+                if (button != BUTTON_NONE)
+                {
+                    shoot--;
+                }
+                // Handle boss shot
+                if (shoot == 0)
+                {
+                    int upOrDown = randomNumber(1);
+                    if (upOrDown == 0)
+                    {
+                        lcd_send_command(DD_RAM_ADDR2 + 13);
+                        lcd_send_data('*');
+                        DISPLAY_POSITIONS[1][13] = BOSS_SHOT;
+                    }
+                    else
+                    {
+                        lcd_send_command(DD_RAM_ADDR + 13);
+                        lcd_send_data('*');
+                        DISPLAY_POSITIONS[0][13] = BOSS_SHOT;
+                    }
+                    shoot = randomNumber(5);
+                }
+
+                handleButtons(button);
+
+                enemyMovementAndActionCounter--;
+                if (enemyMovementAndActionCounter == 0)
+                {
+                    bossShotMovement();
+                    enemyMovementAndActionCounter = enemyMovementAndActionCounterRefresh;
+                }
+
+                // game over
+                if (isPlayerDead())
+                {
+                    endGameState("   GAME OVER!");
+                    break;
+                }
+
+                if (checkWin())
+                {
+                    endGameState("   YOU WON!");
+                    break;
+                }
+            }
+        }
+
+        // restart the game
+        customSleep(12);
+        clearDisplay();
+        lcd_send_line1("    PRESS S");
+        lcd_send_line2("   TO RESTART");
+        while (1)
+        {
+            while (button_pressed() != BUTTON_DOWN)
+            {
+                button_unlock();
+            }
+            clearDisplay();
+            button_unlock();
+            restart = 1;
+            break;
+        }
+        if (restart)
+        {
+            resetGame();
+            continue;
         }
     }
 
