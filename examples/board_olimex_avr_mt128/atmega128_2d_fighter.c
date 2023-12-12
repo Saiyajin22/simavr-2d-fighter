@@ -210,6 +210,62 @@ static void clearDisplay()
 }
 
 // CUSTOM CHARACTERS ------------------------------
+//  {
+//         0b11110,
+//         0b11110,
+//         0b11010,
+//         0b11010,
+//         0b00010,
+//         0b00010,
+//         0b00010,
+//         0b00010}, // 2 - Player attack left - AXE
+
+// {
+//         0b01111,
+//         0b01111,
+//         0b01011,
+//         0b01011,
+//         0b01000,
+//         0b01000,
+//         0b01000,
+//         0b01000}, // 3 - Player attack right -- AXE - UNUSED
+
+// {
+//     0b00000,
+//     0b00000,
+//     0b11111,
+//     0b00011,
+//     0b00011,
+//     0b00000,
+//     0b00000,
+//     0b00000}, // 6 - Enemy attack from left - AXE - UNUSED
+// {
+//     0b00000,
+//     0b00000,
+//     0b11111,
+//     0b11000,
+//     0b11000,
+//     0b00000,
+//     0b00000,
+//     0b00000}, // 7 - Enemy attack from right - AXE - UNUSED
+//  {
+//         0b11000,
+//         0b11010,
+//         0b10001,
+//         0b11111,
+//         0b10001,
+//         0b10010,
+//         0b11000,
+//         0b01000}, // 6 - Enemy archer left
+//   {
+//         0b00011,
+//         0b01011,
+//         0b10001,
+//         0b11111,
+//         0b10001,
+//         0b01001,
+//         0b00011,
+//         0b01000}, // 7 - Enemy archer right
 
 static unsigned char CUSTOM_CHARACTERS[8][8] = {
     {0b01110,
@@ -230,14 +286,14 @@ static unsigned char CUSTOM_CHARACTERS[8][8] = {
         0b01110,
         0b01010}, // 1 - Player looking right
     {
-        0b11110,
-        0b11110,
-        0b11010,
-        0b11010,
-        0b00010,
-        0b00010,
-        0b00010,
-        0b00010}, // 2 - Player attack left
+        0b00000,
+        0b10000,
+        0b10000,
+        0b01010,
+        0b00100,
+        0b01010,
+        0b00001,
+        0b00000}, // 2 - Player & enemy attack left -- SWORD
     {
         0b01111,
         0b01111,
@@ -246,7 +302,7 @@ static unsigned char CUSTOM_CHARACTERS[8][8] = {
         0b01000,
         0b01000,
         0b01000,
-        0b01000}, // 3 - Player attack right
+        0b01000}, // 3 - Player attack right -- AXE - UNUSED
     {
         0b11100,
         0b11000,
@@ -266,23 +322,23 @@ static unsigned char CUSTOM_CHARACTERS[8][8] = {
         0b00010,
         0b00101}, // 5 - Enemy coming from right
     {
-        0b00000,
-        0b00000,
+        0b11000,
+        0b11010,
+        0b10001,
         0b11111,
-        0b00011,
-        0b00011,
-        0b00000,
-        0b00000,
-        0b00000}, // 6 - Enemy attack from left
+        0b10001,
+        0b10010,
+        0b11000,
+        0b01000}, // 6 - Enemy archer left
     {
-        0b00000,
-        0b00000,
+        0b00011,
+        0b01011,
+        0b10001,
         0b11111,
-        0b11000,
-        0b11000,
-        0b00000,
-        0b00000,
-        0b00000}, // 7 - Enemy attack from right
+        0b10001,
+        0b01001,
+        0b00011,
+        0b00010}, // 7 - Enemy archer right
 };
 
 static void chars_init()
@@ -329,16 +385,91 @@ int playerRow = DD_RAM_ADDR2;
 int playerRowNum = 1;
 int playerScore = 0;
 int spawnEnemy = 0;
+int bossSwordCol = 14;
+int bossBodyCol = 15;
+int gameOver = 0;
+int enemyMovementAndActionCounter = 0;
+int archerShootCount = 4;
+int enemyMovementAndActionCounterRefresh = 0;
+char restart = 0;
 int DISPLAY_POSITIONS[2][16] = {
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // 0 == nothing, 1 == player, 4 == enemy coming left, 5 == enemy coming right
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // 0 == nothing, 1 == player, 4 == enemy coming left, 5 == enemy coming right, 2 == BOSS body part, 3 == BOSS shot, 6 == enemy archer left, 7 == enemy archer right
+    {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0}};
 int PLAYER = 1;
-#define PLAYER_ATTACK_LEFT 2
-#define PLAYER_ATTACK_RIGHT 3
+#define PLAYER_ATTACK_LEFT 2    // sword - custom
+#define PLAYER_ATTACK_RIGHT 210 // sword - built in
 #define ENEMY_COMING_LEFT 4
 #define ENEMY_COMING_RIGHT 5
-#define ENEMY_ATTACK_LEFT 6
-#define ENEMY_ATTACK_RIGHT 7
+#define ENEMY_ARCHER_LEFT 6
+#define ENEMY_ARCHER_RIGHT 7
+#define ENEMY_ATTACK_LEFT 210
+#define ENEMY_ATTACK_RIGHT 2
+#define UPPER_SWORD_PART 4
+#define LOWER_SWORD_PART 5
+#define BOSS_UPPER_PART 6
+#define BOSS_LOWER_PART 7
+#define BOSS_BODY_PART 2
+#define BOSS_SHOT 3
+#define PLAYER_BODY 1
+#define ARCHER_SHOT_LEFT 126
+#define ARCHER_SHOT_RIGHT 127
+#define EASY 1500000
+#define MEDIUM 100000
+#define HARD 21000
+
+void resetGame()
+{
+    playerCol = 7;
+    playerRow = DD_RAM_ADDR2;
+    playerRowNum = 1;
+    playerScore = 0;
+    spawnEnemy = 0;
+    bossSwordCol = 14;
+    bossBodyCol = 15;
+    gameOver = 0;
+    enemyMovementAndActionCounter = 0;
+    archerShootCount = 4;
+    enemyMovementAndActionCounterRefresh = 0;
+    restart = 0;
+    PLAYER = 1;
+    resetDisplayPositions();
+    CUSTOM_CHARACTERS[4][0] = 0b11100;
+    CUSTOM_CHARACTERS[4][1] = 0b11000;
+    CUSTOM_CHARACTERS[4][2] = 0b01011;
+    CUSTOM_CHARACTERS[4][3] = 0b01011;
+    CUSTOM_CHARACTERS[4][4] = 0b01110;
+    CUSTOM_CHARACTERS[4][5] = 0b01010;
+    CUSTOM_CHARACTERS[4][6] = 0b01000;
+    CUSTOM_CHARACTERS[4][7] = 0b10100; // 4 - Enemy coming from left
+
+    CUSTOM_CHARACTERS[5][0] = 0b00111;
+    CUSTOM_CHARACTERS[5][1] = 0b00011;
+    CUSTOM_CHARACTERS[5][2] = 0b11010;
+    CUSTOM_CHARACTERS[5][3] = 0b11010;
+    CUSTOM_CHARACTERS[5][4] = 0b01110;
+    CUSTOM_CHARACTERS[5][5] = 0b01010;
+    CUSTOM_CHARACTERS[5][6] = 0b00010;
+    CUSTOM_CHARACTERS[5][7] = 0b00101; // 5 - Enemy coming from right
+
+    CUSTOM_CHARACTERS[6][0] = 0b11000;
+    CUSTOM_CHARACTERS[6][1] = 0b11010;
+    CUSTOM_CHARACTERS[6][2] = 0b10001;
+    CUSTOM_CHARACTERS[6][3] = 0b11111;
+    CUSTOM_CHARACTERS[6][4] = 0b10001;
+    CUSTOM_CHARACTERS[6][5] = 0b10010;
+    CUSTOM_CHARACTERS[6][6] = 0b11000;
+    CUSTOM_CHARACTERS[6][7] = 0b01000; // 6 - Enemy archer left
+
+    CUSTOM_CHARACTERS[7][0] = 0b00011;
+    CUSTOM_CHARACTERS[7][1] = 0b01011;
+    CUSTOM_CHARACTERS[7][2] = 0b10001;
+    CUSTOM_CHARACTERS[7][3] = 0b11111;
+    CUSTOM_CHARACTERS[7][4] = 0b10001;
+    CUSTOM_CHARACTERS[7][5] = 0b01001;
+    CUSTOM_CHARACTERS[7][6] = 0b00011;
+    CUSTOM_CHARACTERS[7][7] = 0b00010; // 7 - Enemy archer right
+    chars_init();
+}
 
 void initCharacter()
 {
@@ -361,16 +492,56 @@ int isPlayerDead()
         lcd_send_data(ENEMY_ATTACK_LEFT);
         return 1;
     }
-    else if (DISPLAY_POSITIONS[playerRowNum][playerCol] == ENEMY_COMING_RIGHT || DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == ENEMY_COMING_RIGHT) {
+    else if (DISPLAY_POSITIONS[playerRowNum][playerCol] == ENEMY_COMING_RIGHT || DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == ENEMY_COMING_RIGHT)
+    {
         lcd_send_command(playerRow + playerCol);
         lcd_send_data(ENEMY_ATTACK_RIGHT);
         return 1;
     }
+    else if (DISPLAY_POSITIONS[playerRowNum][playerCol] == BOSS_BODY_PART || DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == BOSS_BODY_PART)
+    {
+        return 1;
+    }
+    else if (DISPLAY_POSITIONS[playerRowNum][playerCol] == BOSS_SHOT)
+    {
+        return 1;
+    }
+    else if (DISPLAY_POSITIONS[playerRowNum][playerCol] == ARCHER_SHOT_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol] == ARCHER_SHOT_RIGHT)
+    {
+        return 1;
+    }
+    else if (DISPLAY_POSITIONS[playerRowNum][playerCol - 1] == ENEMY_ARCHER_LEFT)
+    {
+        lcd_send_command(playerRow + playerCol);
+        lcd_send_data(ENEMY_ATTACK_LEFT);
+        return 1;
+    }
+    else if (DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == ENEMY_ARCHER_RIGHT)
+    {
+        lcd_send_command(playerRow + playerCol);
+        lcd_send_data(ENEMY_ARCHER_RIGHT);
+        return 1;
+    }
 
-        return 0;
+    return 0;
 }
 
-// TODO REFINE MOVEMENT, MAKE IT MORE RANDOM
+void resetDisplayPositions()
+{
+    for (int i = 0; i < 2; ++i)
+    {
+        for (int j = 0; j < 16; ++j)
+        {
+            DISPLAY_POSITIONS[i][j] = 0;
+        }
+    }
+    DISPLAY_POSITIONS[playerRowNum][playerCol] = 1;
+}
+
+// TODO ADD SOME AI TO ENEMIES
+// TODO, MAKE ENEMY AND BOSS SHOT SPAWNER MORE RANDOM
+
+// SCOREBOARD
 void enemyMovement()
 {
     int NEW_DISPLAY_POSITIONS[2][16] = {
@@ -380,48 +551,74 @@ void enemyMovement()
     {
         for (int j = 0; j < 16; ++j)
         {
-            if (DISPLAY_POSITIONS[i][j] == ENEMY_COMING_LEFT)
+            if (DISPLAY_POSITIONS[i][j] == PLAYER_BODY && DISPLAY_POSITIONS[i][j + 1] != ARCHER_SHOT_RIGHT && DISPLAY_POSITIONS[i][j - 1] != ARCHER_SHOT_LEFT)
+            {
+                NEW_DISPLAY_POSITIONS[i][j] = PLAYER_BODY;
+            }
+            else if (DISPLAY_POSITIONS[i][j] == ENEMY_ARCHER_LEFT)
+            {
+                NEW_DISPLAY_POSITIONS[i][j] = ENEMY_ARCHER_LEFT;
+            }
+            else if (DISPLAY_POSITIONS[i][j] == ENEMY_ARCHER_RIGHT)
+            {
+                NEW_DISPLAY_POSITIONS[i][j] = ENEMY_ARCHER_RIGHT;
+            }
+            else if (DISPLAY_POSITIONS[i][j] == ARCHER_SHOT_LEFT)
+            {
+                if (DISPLAY_POSITIONS[i][j + 1] != ENEMY_ARCHER_RIGHT)
+                {
+                    NEW_DISPLAY_POSITIONS[i][j + 1] = ARCHER_SHOT_LEFT;
+                }
+                NEW_DISPLAY_POSITIONS[i][j] = 0;
+            }
+            else if (DISPLAY_POSITIONS[i][j] == ARCHER_SHOT_RIGHT)
+            {
+                if (DISPLAY_POSITIONS[i][j - 1] != ENEMY_ARCHER_LEFT)
+                {
+                    NEW_DISPLAY_POSITIONS[i][j - 1] = ARCHER_SHOT_RIGHT;
+                }
+                NEW_DISPLAY_POSITIONS[i][j] = 0;
+            }
+            else if (DISPLAY_POSITIONS[i][j] == ENEMY_COMING_LEFT)
             {
                 if (j != 15)
                 {
-                    NEW_DISPLAY_POSITIONS[i][j + 1] = ENEMY_COMING_LEFT;
-                }
-
-                if (i == 1)
-                {
-                    lcd_send_command(DD_RAM_ADDR2 + j);
-                    lcd_send_data(' ');
-                    lcd_send_command(DD_RAM_ADDR2 + j + 1);
-                    lcd_send_data(ENEMY_COMING_LEFT);
-                }
-                else
-                {
-                    lcd_send_command(DD_RAM_ADDR + j);
-                    lcd_send_data(' ');
-                    lcd_send_command(DD_RAM_ADDR + j + 1);
-                    lcd_send_data(ENEMY_COMING_LEFT);
+                    if (playerRowNum == 0 && i != 0 && j > 0)
+                    {
+                        NEW_DISPLAY_POSITIONS[i - 1][j] = ENEMY_COMING_LEFT;
+                        NEW_DISPLAY_POSITIONS[i][j] = 0;
+                    }
+                    else if (playerRowNum == 1 && i != 1 && j > 0)
+                    {
+                        NEW_DISPLAY_POSITIONS[i + 1][j] = ENEMY_COMING_LEFT;
+                        NEW_DISPLAY_POSITIONS[i][j] = 0;
+                    }
+                    else
+                    {
+                        NEW_DISPLAY_POSITIONS[i][j + 1] = ENEMY_COMING_LEFT;
+                        NEW_DISPLAY_POSITIONS[i][j] = 0;
+                    }
                 }
             }
             else if (DISPLAY_POSITIONS[i][j] == ENEMY_COMING_RIGHT)
             {
                 if (j != 0)
                 {
-                    NEW_DISPLAY_POSITIONS[i][j - 1] = ENEMY_COMING_RIGHT;
-                }
-
-                if (i == 1)
-                {
-                    lcd_send_command(DD_RAM_ADDR2 + j);
-                    lcd_send_data(' ');
-                    lcd_send_command(DD_RAM_ADDR2 + j - 1);
-                    lcd_send_data(ENEMY_COMING_RIGHT);
-                }
-                else
-                {
-                    lcd_send_command(DD_RAM_ADDR + j);
-                    lcd_send_data(' ');
-                    lcd_send_command(DD_RAM_ADDR + j - 1);
-                    lcd_send_data(ENEMY_COMING_RIGHT);
+                    if (playerRowNum == 0 && i != 0 && j < 15)
+                    {
+                        NEW_DISPLAY_POSITIONS[i - 1][j] = ENEMY_COMING_RIGHT;
+                        NEW_DISPLAY_POSITIONS[i][j] = 0;
+                    }
+                    else if (playerRowNum == 1 && i != 1 && j < 15)
+                    {
+                        NEW_DISPLAY_POSITIONS[i + 1][j] = ENEMY_COMING_RIGHT;
+                        NEW_DISPLAY_POSITIONS[i][j] = 0;
+                    }
+                    else
+                    {
+                        NEW_DISPLAY_POSITIONS[i][j - 1] = ENEMY_COMING_RIGHT;
+                        NEW_DISPLAY_POSITIONS[i][j] = 0;
+                    }
                 }
             }
         }
@@ -431,13 +628,472 @@ void enemyMovement()
         for (int j = 0; j < 16; ++j)
         {
             DISPLAY_POSITIONS[i][j] = NEW_DISPLAY_POSITIONS[i][j];
+            if (DISPLAY_POSITIONS[i][j] == 0)
+            {
+                if (i == 1)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + j);
+                    lcd_send_data(' ');
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + j);
+                    lcd_send_data(' ');
+                }
+            }
+            else if (DISPLAY_POSITIONS[i][j] == ENEMY_COMING_LEFT)
+            {
+                if (i == 1)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + j);
+                    lcd_send_data(ENEMY_COMING_LEFT);
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + j);
+                    lcd_send_data(ENEMY_COMING_LEFT);
+                }
+            }
+            else if (DISPLAY_POSITIONS[i][j] == ENEMY_COMING_RIGHT)
+            {
+                if (i == 1)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + j);
+                    lcd_send_data(ENEMY_COMING_RIGHT);
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + j);
+                    lcd_send_data(ENEMY_COMING_RIGHT);
+                }
+            }
+            else if (DISPLAY_POSITIONS[i][j] == ARCHER_SHOT_LEFT)
+            {
+                if (i == 1)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + j);
+                    lcd_send_data(ARCHER_SHOT_LEFT);
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + j);
+                    lcd_send_data(ARCHER_SHOT_LEFT);
+                }
+            }
+            else if (DISPLAY_POSITIONS[i][j] == ARCHER_SHOT_RIGHT)
+            {
+                if (i == 1)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + j);
+                    lcd_send_data(ARCHER_SHOT_RIGHT);
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + j);
+                    lcd_send_data(ARCHER_SHOT_RIGHT);
+                }
+            }
+            else if (DISPLAY_POSITIONS[i][j] == ENEMY_ARCHER_LEFT)
+            {
+                if (i == 1)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + j);
+                    lcd_send_data(ENEMY_ARCHER_LEFT);
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + j);
+                    lcd_send_data(ENEMY_ARCHER_LEFT);
+                }
+            }
+            else if (DISPLAY_POSITIONS[i][j] == ENEMY_ARCHER_RIGHT)
+            {
+                if (i == 1)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + j);
+                    lcd_send_data(ENEMY_ARCHER_RIGHT);
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + j);
+                    lcd_send_data(ENEMY_ARCHER_RIGHT);
+                }
+            }
         }
     }
-    wait(12, 32000);
+    // wait(13, 32000);
+}
+
+void bossShotMovement()
+{
+    int NEW_DISPLAY_POSITIONS[2][16] = {
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
+    for (int i = 0; i < 2; ++i)
+    {
+        for (int j = 0; j < 16; ++j)
+        {
+            if (DISPLAY_POSITIONS[i][j] == PLAYER_BODY)
+            {
+                NEW_DISPLAY_POSITIONS[i][j] = PLAYER_BODY;
+            }
+            else if (DISPLAY_POSITIONS[i][j] == BOSS_SHOT)
+            {
+                if (j != 0)
+                {
+                    NEW_DISPLAY_POSITIONS[i][j - 1] = BOSS_SHOT;
+                    NEW_DISPLAY_POSITIONS[i][j] = 0;
+                }
+            }
+            else if (DISPLAY_POSITIONS[i][j] == BOSS_BODY_PART)
+            {
+                NEW_DISPLAY_POSITIONS[i][j] = BOSS_BODY_PART;
+            }
+        }
+    }
+    for (int i = 0; i < 2; ++i)
+    {
+        for (int j = 0; j < 16; ++j)
+        {
+            DISPLAY_POSITIONS[i][j] = NEW_DISPLAY_POSITIONS[i][j];
+            if (DISPLAY_POSITIONS[i][j] == 0)
+            {
+                if (i == 1)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + j);
+                    lcd_send_data(' ');
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + j);
+                    lcd_send_data(' ');
+                }
+            }
+            else if (DISPLAY_POSITIONS[i][j] == BOSS_SHOT)
+            {
+                if (i == 1)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + j);
+                    lcd_send_data('*');
+                }
+                else
+                {
+                    lcd_send_command(DD_RAM_ADDR + j);
+                    lcd_send_data('*');
+                }
+            }
+        }
+    }
+    // wait(13, 32000);
+}
+
+void handleButtons(int button)
+{
+    if (button == BUTTON_RIGHT)
+    {
+        playerCol++;
+        if (validatePlayerPosition())
+        {
+            lcd_send_command(playerRow + playerCol - 1);
+            lcd_send_data(' ');
+            PLAYER = 1;
+            lcd_send_command(playerRow + playerCol);
+            lcd_send_data(PLAYER);
+            DISPLAY_POSITIONS[playerRowNum][playerCol - 1] = 0;
+            DISPLAY_POSITIONS[playerRowNum][playerCol] = 1;
+        }
+        else
+        {
+            playerCol--;
+        }
+    }
+    else if (button == BUTTON_LEFT)
+    {
+        playerCol--;
+        if (validatePlayerPosition())
+        {
+            lcd_send_command(playerRow + playerCol + 1);
+            lcd_send_data(' ');
+            PLAYER = 0;
+            lcd_send_command(playerRow + playerCol);
+            lcd_send_data(PLAYER);
+            DISPLAY_POSITIONS[playerRowNum][playerCol + 1] = 0;
+            DISPLAY_POSITIONS[playerRowNum][playerCol] = 1;
+        }
+        else
+        {
+            playerCol++;
+        }
+    }
+    else if (button == BUTTON_UP)
+    {
+        if (playerRow == DD_RAM_ADDR2)
+        {
+            lcd_send_command(playerRow + playerCol);
+            lcd_send_data(' ');
+
+            playerRow = DD_RAM_ADDR;
+            playerRowNum = 0;
+            lcd_send_command(playerRow + playerCol);
+            lcd_send_data(PLAYER);
+            DISPLAY_POSITIONS[playerRowNum + 1][playerCol] = 0;
+            DISPLAY_POSITIONS[playerRowNum][playerCol] = 1;
+        }
+    }
+    else if (button == BUTTON_DOWN)
+    {
+        if (playerRow == DD_RAM_ADDR)
+        {
+            lcd_send_command(playerRow + playerCol);
+            lcd_send_data(' ');
+
+            playerRow = DD_RAM_ADDR2;
+            playerRowNum = 1;
+            lcd_send_command(playerRow + playerCol);
+            lcd_send_data(PLAYER);
+            DISPLAY_POSITIONS[playerRowNum - 1][playerCol] = 0;
+            DISPLAY_POSITIONS[playerRowNum][playerCol] = 1;
+        }
+    }
+    // Attack action
+    else if (button == BUTTON_CENTER)
+    {
+        if (PLAYER == 0)
+        {
+            lcd_send_command(playerRow + playerCol - 1);
+            lcd_send_data(PLAYER_ATTACK_LEFT);
+            if (DISPLAY_POSITIONS[playerRowNum][playerCol - 1] == ENEMY_COMING_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 2] == ENEMY_COMING_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 3] == ENEMY_COMING_LEFT)
+            {
+                DISPLAY_POSITIONS[playerRowNum][playerCol - 1] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol - 2] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol - 3] = 0;
+                playerScore++;
+            }
+            else if (DISPLAY_POSITIONS[playerRowNum][playerCol - 1] == ARCHER_SHOT_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 2] == ARCHER_SHOT_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 3] == ARCHER_SHOT_LEFT)
+            {
+                DISPLAY_POSITIONS[playerRowNum][playerCol - 1] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol - 2] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol - 3] = 0;
+                playerScore += 5;
+            }
+            else if (DISPLAY_POSITIONS[playerRowNum][playerCol - 1] == ENEMY_ARCHER_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 2] == ENEMY_ARCHER_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 3] == ENEMY_ARCHER_LEFT)
+            {
+                DISPLAY_POSITIONS[playerRowNum][playerCol - 1] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol - 2] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol - 3] = 0;
+                playerScore += 20;
+            }
+            wait(10, 32000);
+            lcd_send_command(playerRow + playerCol - 1);
+            lcd_send_data(' ');
+            lcd_send_command(playerRow + playerCol - 2);
+            lcd_send_data(' ');
+            lcd_send_command(playerRow + playerCol - 3);
+            lcd_send_data(' ');
+        }
+        else if (PLAYER == 1)
+        {
+            lcd_send_command(playerRow + playerCol + 1);
+            lcd_send_data(PLAYER_ATTACK_RIGHT);
+            if (DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == ENEMY_COMING_RIGHT || DISPLAY_POSITIONS[playerRowNum][playerCol + 2] == ENEMY_COMING_RIGHT || DISPLAY_POSITIONS[playerRowNum][playerCol + 3] == ENEMY_COMING_RIGHT)
+            {
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 1] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 2] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 3] = 0;
+                playerScore++;
+            }
+            else if (DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == ARCHER_SHOT_RIGHT || DISPLAY_POSITIONS[playerRowNum][playerCol + 2] == ARCHER_SHOT_RIGHT || DISPLAY_POSITIONS[playerRowNum][playerCol + 3] == ARCHER_SHOT_RIGHT)
+            {
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 1] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 2] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 3] = 0;
+                playerScore += 5;
+            }
+            else if (DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == ENEMY_ARCHER_RIGHT || DISPLAY_POSITIONS[playerRowNum][playerCol + 2] == ENEMY_ARCHER_RIGHT || DISPLAY_POSITIONS[playerRowNum][playerCol + 3] == ENEMY_ARCHER_RIGHT)
+            {
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 1] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 2] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 3] = 0;
+                playerScore += 20;
+            }
+            else if (DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == BOSS_BODY_PART || DISPLAY_POSITIONS[playerRowNum][playerCol + 2] == BOSS_BODY_PART || DISPLAY_POSITIONS[playerRowNum][playerCol + 3] == BOSS_BODY_PART)
+            {
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 1] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 2] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 3] = 0;
+                playerScore += 50;
+            }
+            else if (DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == BOSS_SHOT || DISPLAY_POSITIONS[playerRowNum][playerCol + 2] == BOSS_SHOT || DISPLAY_POSITIONS[playerRowNum][playerCol + 3] == BOSS_SHOT)
+            {
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 1] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 2] = 0;
+                DISPLAY_POSITIONS[playerRowNum][playerCol + 3] = 0;
+                playerScore += 10;
+            }
+            wait(10, 32000);
+            lcd_send_command(playerRow + playerCol + 1);
+            lcd_send_data(' ');
+            lcd_send_command(playerRow + playerCol + 2);
+            lcd_send_data(' ');
+            lcd_send_command(playerRow + playerCol + 3);
+            lcd_send_data(' ');
+        }
+    }
+    // unlock buttons
+    button_unlock();
+}
+
+// Spawn enemies
+void spawnEnemies()
+{
+    if (spawnEnemy == 0)
+    {
+        int isArcher = randomNumber(10) < 2 ? 1 : 0;
+        int leftOrRight = randomNumber(1);
+        int upOrDown = randomNumber(1);
+        // left enemy spawn
+        if (leftOrRight == 0)
+        {
+            if (upOrDown == 0)
+            {
+                if (isArcher)
+                {
+                    lcd_send_command(DD_RAM_ADDR2);
+                    lcd_send_data(ENEMY_ARCHER_LEFT);
+                    DISPLAY_POSITIONS[1][0] = ENEMY_ARCHER_LEFT;
+                }
+                else
+                {
+                    if (DISPLAY_POSITIONS[1][0] == ENEMY_ARCHER_LEFT)
+                    {
+                        lcd_send_command(DD_RAM_ADDR2 + 1);
+                        lcd_send_data(ENEMY_COMING_LEFT);
+                        DISPLAY_POSITIONS[1][1] = ENEMY_COMING_LEFT;
+                    }
+                    else
+                    {
+                        lcd_send_command(DD_RAM_ADDR2);
+                        lcd_send_data(ENEMY_COMING_LEFT);
+                        DISPLAY_POSITIONS[1][0] = ENEMY_COMING_LEFT;
+                    }
+                }
+            }
+            else
+            {
+                if (isArcher)
+                {
+                    lcd_send_command(DD_RAM_ADDR);
+                    lcd_send_data(ENEMY_ARCHER_LEFT);
+                    DISPLAY_POSITIONS[0][0] = ENEMY_ARCHER_LEFT;
+                }
+                else
+                {
+                    if (DISPLAY_POSITIONS[0][0] == ENEMY_ARCHER_LEFT)
+                    {
+                        lcd_send_command(DD_RAM_ADDR + 1);
+                        lcd_send_data(ENEMY_COMING_LEFT);
+                        DISPLAY_POSITIONS[0][1] = ENEMY_COMING_LEFT;
+                    }
+                    else
+                    {
+                        lcd_send_command(DD_RAM_ADDR);
+                        lcd_send_data(ENEMY_COMING_LEFT);
+                        DISPLAY_POSITIONS[0][0] = ENEMY_COMING_LEFT;
+                    }
+                }
+            }
+        }
+        // right enemy spawn
+        else
+        {
+            if (upOrDown == 0)
+            {
+                if (isArcher)
+                {
+                    lcd_send_command(DD_RAM_ADDR2 + 15);
+                    lcd_send_data(ENEMY_ARCHER_RIGHT);
+                    DISPLAY_POSITIONS[1][15] = ENEMY_ARCHER_RIGHT;
+                }
+                else
+                {
+                    if (DISPLAY_POSITIONS[1][15] == ENEMY_ARCHER_RIGHT)
+                    {
+                        lcd_send_command(DD_RAM_ADDR2 + 14);
+                        lcd_send_data(ENEMY_COMING_RIGHT);
+                        DISPLAY_POSITIONS[1][14] = ENEMY_COMING_RIGHT;
+                    }
+                    else
+                    {
+                        lcd_send_command(DD_RAM_ADDR2 + 15);
+                        lcd_send_data(ENEMY_COMING_RIGHT);
+                        DISPLAY_POSITIONS[1][15] = ENEMY_COMING_RIGHT;
+                    }
+                }
+            }
+            else
+            {
+                if (isArcher)
+                {
+                    lcd_send_command(DD_RAM_ADDR + 15);
+                    lcd_send_data(ENEMY_ARCHER_RIGHT);
+                    DISPLAY_POSITIONS[0][15] = ENEMY_ARCHER_RIGHT;
+                }
+                else
+                {
+                    if (DISPLAY_POSITIONS[0][15] == ENEMY_ARCHER_RIGHT)
+                    {
+                        lcd_send_command(DD_RAM_ADDR + 14);
+                        lcd_send_data(ENEMY_COMING_RIGHT);
+                        DISPLAY_POSITIONS[0][14] = ENEMY_COMING_RIGHT;
+                    }
+                    else
+                    {
+                        lcd_send_command(DD_RAM_ADDR + 15);
+                        lcd_send_data(ENEMY_COMING_RIGHT);
+                        DISPLAY_POSITIONS[0][15] = ENEMY_COMING_RIGHT;
+                    }
+                }
+            }
+        }
+        spawnEnemy = randomNumber(8);
+    }
+}
+
+// sets the end game state
+void endGameState(char *state)
+{
+    gameOver = 1;
+    customSleep(1);
+    clearDisplay();
+    lcd_send_line1(state);
+    char scoreText[20];
+    sprintf(scoreText, " YOUR SCORE: %d", playerScore);
+    lcd_send_line2(scoreText);
+}
+
+int checkWin()
+{
+    int counter = 0;
+    for (int i = 0; i < 2; ++i)
+    {
+        for (int j = 0; j < 16; j++)
+        {
+            if (DISPLAY_POSITIONS[i][j] == BOSS_BODY_PART)
+            {
+                counter++;
+            }
+        }
+    }
+
+    if (counter > 0)
+    {
+        return 0;
+    }
+
+    return 1;
 }
 
 // THE GAME -----------------------------------------------
-
 int main()
 {
     port_init();
@@ -446,7 +1102,7 @@ int main()
     lcd_send_line1("   2D Fighter");
     lcd_send_line2("Press S to start");
 
-    // welcome screen
+    // welcome screen and difficulty selector
     while (1)
     {
         while (button_pressed() != BUTTON_DOWN)
@@ -457,177 +1113,245 @@ int main()
         button_unlock();
         break;
     }
-    initCharacter();
 
-    // game loop
     while (1)
     {
-        int button = button_pressed();
+        restart = 0;
+        lcd_send_line1("Chooz difficulty");
+        customSleep(8);
+        clearDisplay();
+        lcd_send_line1("A=easy, S=medium");
+        lcd_send_line2("D=hard");
+        while (1)
+        {
+            int button = button_pressed();
+            button_unlock();
+            if (button == BUTTON_LEFT)
+            {
+                enemyMovementAndActionCounterRefresh = EASY;
+                enemyMovementAndActionCounter = EASY;
+                break;
+            }
+            else if (button == BUTTON_DOWN)
+            {
+                enemyMovementAndActionCounterRefresh = MEDIUM;
+                enemyMovementAndActionCounter = MEDIUM;
+                break;
+            }
+            else if (button == BUTTON_RIGHT)
+            {
+                enemyMovementAndActionCounterRefresh = HARD;
+                enemyMovementAndActionCounter = HARD;
+                break;
+            }
+        }
+        clearDisplay();
+        lcd_send_line1("Game is starting");
+        customSleep(4);
+        clearDisplay();
+        customSleep(4);
 
-        if (button != BUTTON_NONE)
+        // game loop
+        initCharacter();
+        while (1)
         {
-            spawnEnemy--;
-        }
-        // Handle enemies
-        if (spawnEnemy == 0)
-        {
-            int leftOrRight = randomNumber(1);
-            int upOrDown = randomNumber(1);
-            // left enemy spawn
-            if (leftOrRight == 0)
-            {
-                if (upOrDown == 0)
-                {
-                    lcd_send_command(DD_RAM_ADDR2);
-                    lcd_send_data(ENEMY_COMING_LEFT);
-                    DISPLAY_POSITIONS[1][0] = ENEMY_COMING_LEFT;
-                }
-                else
-                {
-                    lcd_send_command(DD_RAM_ADDR);
-                    lcd_send_data(ENEMY_COMING_LEFT);
-                    DISPLAY_POSITIONS[0][0] = ENEMY_COMING_LEFT;
-                }
-            }
-            // right enemy spawn
-            else
-            {
-                if (upOrDown == 0)
-                {
-                    lcd_send_command(DD_RAM_ADDR2 + 15);
-                    lcd_send_data(ENEMY_COMING_RIGHT);
-                    DISPLAY_POSITIONS[1][15] = ENEMY_COMING_RIGHT;
-                }
-                else
-                {
-                    lcd_send_command(DD_RAM_ADDR + 15);
-                    lcd_send_data(ENEMY_COMING_RIGHT);
-                    DISPLAY_POSITIONS[0][15] = ENEMY_COMING_RIGHT;
-                }
-            }
-            spawnEnemy = randomNumber(8);
-        }
+            int button = button_pressed();
 
-        // buttons handling
-        if (button == BUTTON_RIGHT)
-        {
-            playerCol++;
-            if (validatePlayerPosition())
+            if (button != BUTTON_NONE)
             {
-                lcd_send_command(playerRow + playerCol - 1);
-                lcd_send_data(' ');
-                PLAYER = 1;
-                lcd_send_command(playerRow + playerCol);
-                lcd_send_data(PLAYER);
+                spawnEnemy--;
+                archerShootCount--;
             }
-            else
-            {
-                playerCol--;
-            }
-        }
-        else if (button == BUTTON_LEFT)
-        {
-            playerCol--;
-            if (validatePlayerPosition())
-            {
-                lcd_send_command(playerRow + playerCol + 1);
-                lcd_send_data(' ');
-                PLAYER = 0;
-                lcd_send_command(playerRow + playerCol);
-                lcd_send_data(PLAYER);
-            }
-            else
-            {
-                playerCol++;
-            }
-        }
-        else if (button == BUTTON_UP)
-        {
-            if (playerRow == DD_RAM_ADDR2)
-            {
-                lcd_send_command(playerRow + playerCol);
-                lcd_send_data(' ');
+            // Spawn enemies
+            spawnEnemies();
 
-                playerRow = DD_RAM_ADDR;
-                playerRowNum = 0;
-                lcd_send_command(playerRow + playerCol);
-                lcd_send_data(PLAYER);
-            }
-        }
-        else if (button == BUTTON_DOWN)
-        {
-            if (playerRow == DD_RAM_ADDR)
-            {
-                lcd_send_command(playerRow + playerCol);
-                lcd_send_data(' ');
+            // buttons handling
+            handleButtons(button);
 
-                playerRow = DD_RAM_ADDR2;
-                playerRowNum = 1;
-                lcd_send_command(playerRow + playerCol);
-                lcd_send_data(PLAYER);
-            }
-        }
-        // Attack action
-        else if (button == BUTTON_CENTER)
-        {
-            if (PLAYER == 0)
+            // move enemies
+            enemyMovementAndActionCounter--;
+            if (enemyMovementAndActionCounter == 0)
             {
-                lcd_send_command(playerRow + playerCol - 1);
-                lcd_send_data(PLAYER_ATTACK_LEFT);
-                if (DISPLAY_POSITIONS[playerRowNum][playerCol - 1] == ENEMY_COMING_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 2] == ENEMY_COMING_LEFT || DISPLAY_POSITIONS[playerRowNum][playerCol - 3] == ENEMY_COMING_LEFT)
-                {
-                    DISPLAY_POSITIONS[playerRowNum][playerCol - 1] = 0;
-                    DISPLAY_POSITIONS[playerRowNum][playerCol - 2] = 0;
-                    DISPLAY_POSITIONS[playerRowNum][playerCol - 3] = 0;
-                    playerScore++;
-                }
-                wait(10, 32000);
-                lcd_send_command(playerRow + playerCol - 1);
-                lcd_send_data(' ');
-                lcd_send_command(playerRow + playerCol - 2);
-                lcd_send_data(' ');
-                lcd_send_command(playerRow + playerCol - 3);
-                lcd_send_data(' ');
+                enemyMovement();
+                enemyMovementAndActionCounter = enemyMovementAndActionCounterRefresh;
             }
-            else if (PLAYER == 1)
+
+            // archer shot
+            if (archerShootCount == 0)
             {
-                lcd_send_command(playerRow + playerCol + 1);
-                lcd_send_data(PLAYER_ATTACK_RIGHT);
-                if (DISPLAY_POSITIONS[playerRowNum][playerCol + 1] == ENEMY_COMING_RIGHT || DISPLAY_POSITIONS[playerRowNum][playerCol + 2] == ENEMY_COMING_RIGHT || DISPLAY_POSITIONS[playerRowNum][playerCol + 3] == ENEMY_COMING_RIGHT)
+                int archerShoot = randomNumber(8);
+                if (DISPLAY_POSITIONS[0][0] == ENEMY_ARCHER_LEFT && archerShoot <= 4)
                 {
-                    DISPLAY_POSITIONS[playerRowNum][playerCol + 1] = 0;
-                    DISPLAY_POSITIONS[playerRowNum][playerCol + 2] = 0;
-                    DISPLAY_POSITIONS[playerRowNum][playerCol + 3] = 0;
-                    playerScore++;
+                    DISPLAY_POSITIONS[0][1] = ARCHER_SHOT_LEFT;
+                    lcd_send_command(DD_RAM_ADDR + 1);
+                    lcd_send_data(ARCHER_SHOT_LEFT);
                 }
-                wait(10, 32000);
-                lcd_send_command(playerRow + playerCol + 1);
-                lcd_send_data(' ');
-                lcd_send_command(playerRow + playerCol + 2);
-                lcd_send_data(' ');
-                lcd_send_command(playerRow + playerCol + 3);
-                lcd_send_data(' ');
+                if (DISPLAY_POSITIONS[1][0] == ENEMY_ARCHER_LEFT && archerShoot <= 4)
+                {
+                    DISPLAY_POSITIONS[1][1] = ARCHER_SHOT_LEFT;
+                    lcd_send_command(DD_RAM_ADDR2 + 1);
+                    lcd_send_data(ARCHER_SHOT_LEFT);
+                }
+                if (DISPLAY_POSITIONS[0][15] == ENEMY_ARCHER_RIGHT && archerShoot >= 5)
+                {
+                    DISPLAY_POSITIONS[0][14] = ARCHER_SHOT_RIGHT;
+                    lcd_send_command(DD_RAM_ADDR - 1);
+                    lcd_send_data(ARCHER_SHOT_RIGHT);
+                }
+                if (DISPLAY_POSITIONS[1][15] == ENEMY_ARCHER_RIGHT && archerShoot >= 5)
+                {
+                    DISPLAY_POSITIONS[1][14] = ARCHER_SHOT_RIGHT;
+                    lcd_send_command(DD_RAM_ADDR2 - 1);
+                    lcd_send_data(ARCHER_SHOT_RIGHT);
+                }
+                archerShootCount = randomNumber(8);
+            }
+
+            // game over
+            if (isPlayerDead())
+            {
+                endGameState("   GAME OVER!");
+                break;
+            }
+
+            // check boss
+            if (playerScore >= 100)
+            {
+                break;
             }
         }
 
-        // move enemies
-        enemyMovement();
-
-        // game over
-        if (isPlayerDead())
+        if (!gameOver)
         {
-            customSleep(1);
+
+            // init boss custom chars
+            CUSTOM_CHARACTERS[4][0] = 0b00100;
+            CUSTOM_CHARACTERS[4][1] = 0b00100;
+            CUSTOM_CHARACTERS[4][2] = 0b00100;
+            CUSTOM_CHARACTERS[4][3] = 0b00100;
+            CUSTOM_CHARACTERS[4][4] = 0b00100;
+            CUSTOM_CHARACTERS[4][5] = 0b01110;
+            CUSTOM_CHARACTERS[4][6] = 0b00100;
+            CUSTOM_CHARACTERS[4][7] = 0b00100; // upper sword part
+
+            CUSTOM_CHARACTERS[5][0] = 0b11111;
+            CUSTOM_CHARACTERS[5][1] = 0b00111;
+            CUSTOM_CHARACTERS[5][2] = 0b00100;
+            CUSTOM_CHARACTERS[5][3] = 0b00100;
+            CUSTOM_CHARACTERS[5][4] = 0b00000;
+            CUSTOM_CHARACTERS[5][5] = 0b00000;
+            CUSTOM_CHARACTERS[5][6] = 0b00000;
+            CUSTOM_CHARACTERS[5][7] = 0b00000; // lower sword part
+
+            CUSTOM_CHARACTERS[6][0] = 0b10000;
+            CUSTOM_CHARACTERS[6][1] = 0b10101;
+            CUSTOM_CHARACTERS[6][2] = 0b11111;
+            CUSTOM_CHARACTERS[6][3] = 0b10000;
+            CUSTOM_CHARACTERS[6][4] = 0b11001;
+            CUSTOM_CHARACTERS[6][5] = 0b10110;
+            CUSTOM_CHARACTERS[6][6] = 0b11111;
+            CUSTOM_CHARACTERS[6][7] = 0b01111; // upper boss part
+
+            CUSTOM_CHARACTERS[7][0] = 0b01001;
+            CUSTOM_CHARACTERS[7][1] = 0b11111;
+            CUSTOM_CHARACTERS[7][2] = 0b11111;
+            CUSTOM_CHARACTERS[7][3] = 0b01001;
+            CUSTOM_CHARACTERS[7][4] = 0b01111;
+            CUSTOM_CHARACTERS[7][5] = 0b01111;
+            CUSTOM_CHARACTERS[7][6] = 0b01001;
+            CUSTOM_CHARACTERS[7][7] = 0b11111; // lower boss part
+
+            chars_init();
+            resetDisplayPositions();
+
+            // render boss
+            lcd_send_command(DD_RAM_ADDR + bossSwordCol);
+            lcd_send_data(UPPER_SWORD_PART);
+            lcd_send_command(DD_RAM_ADDR2 + bossSwordCol);
+            lcd_send_data(LOWER_SWORD_PART);
+            lcd_send_command(DD_RAM_ADDR + bossBodyCol);
+            lcd_send_data(BOSS_UPPER_PART);
+            lcd_send_command(DD_RAM_ADDR2 + bossBodyCol);
+            lcd_send_data(BOSS_LOWER_PART);
+            DISPLAY_POSITIONS[0][bossSwordCol] = 2;
+            DISPLAY_POSITIONS[1][bossSwordCol] = 2;
+            DISPLAY_POSITIONS[0][bossBodyCol] = 2;
+            DISPLAY_POSITIONS[1][bossBodyCol] = 2;
+
+            int shoot = 1;
+            // boss fight
+            while (1)
+            {
+                int button = button_pressed();
+
+                if (button != BUTTON_NONE)
+                {
+                    shoot--;
+                }
+                // Handle boss shot
+                if (shoot == 0)
+                {
+                    int upOrDown = randomNumber(1);
+                    if (upOrDown == 0)
+                    {
+                        lcd_send_command(DD_RAM_ADDR2 + 13);
+                        lcd_send_data('*');
+                        DISPLAY_POSITIONS[1][13] = BOSS_SHOT;
+                    }
+                    else
+                    {
+                        lcd_send_command(DD_RAM_ADDR + 13);
+                        lcd_send_data('*');
+                        DISPLAY_POSITIONS[0][13] = BOSS_SHOT;
+                    }
+                    shoot = randomNumber(5);
+                }
+
+                handleButtons(button);
+
+                enemyMovementAndActionCounter--;
+                if (enemyMovementAndActionCounter == 0)
+                {
+                    bossShotMovement();
+                    enemyMovementAndActionCounter = enemyMovementAndActionCounterRefresh;
+                }
+
+                // game over
+                if (isPlayerDead())
+                {
+                    endGameState("   GAME OVER!");
+                    break;
+                }
+
+                if (checkWin())
+                {
+                    endGameState("   YOU WON!");
+                    break;
+                }
+            }
+        }
+
+        // restart the game
+        customSleep(12);
+        clearDisplay();
+        lcd_send_line1("    PRESS S");
+        lcd_send_line2("   TO RESTART");
+        while (1)
+        {
+            while (button_pressed() != BUTTON_DOWN)
+            {
+                button_unlock();
+            }
             clearDisplay();
-            lcd_send_line1("   GAME OVER!");
-            char score[4];
-            snprintf(score, sizeof(score), "%d", playerScore);
-            char *scoreText = strcat(" YOUR SCORE: ", score);
-            lcd_send_line2(scoreText);
+            button_unlock();
+            restart = 1;
             break;
         }
-
-        // unlock buttons
-        button_unlock();
+        if (restart)
+        {
+            resetGame();
+            continue;
+        }
     }
 
     return 0;
